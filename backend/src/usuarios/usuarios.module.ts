@@ -1,0 +1,116 @@
+import { Module } from '@nestjs/common';
+import { Controller, Get, Patch, Body, Request, UseGuards } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { PrismaService } from '../common/prisma/prisma.service';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
+@Injectable()
+export class UsuariosService {
+  constructor(private prisma: PrismaService) {}
+
+  async listar() {
+    return this.prisma.usuario.findMany({
+      select: {
+        id: true, nombre: true, apellido: true, correo: true,
+        rol: true, activo: true, verificado: true, creadoEn: true,
+      },
+      orderBy: { creadoEn: 'desc' },
+    });
+  }
+
+  async actualizarPerfil(id: number, datos: any) {
+    return this.prisma.usuario.update({
+      where: { id },
+      data: { nombre: datos.nombre, apellido: datos.apellido, telefono: datos.telefono },
+      select: { id: true, nombre: true, apellido: true, correo: true, telefono: true },
+    });
+  }
+
+  async agregarDireccion(usuarioId: number, datos: any) {
+    if (datos.predeterminada) {
+      await this.prisma.direccionUsuario.updateMany({
+        where: { usuarioId },
+        data: { predeterminada: false },
+      });
+    }
+    return this.prisma.direccionUsuario.create({ data: { ...datos, usuarioId } });
+  }
+
+  async listarDirecciones(usuarioId: number) {
+    return this.prisma.direccionUsuario.findMany({ where: { usuarioId } });
+  }
+
+  async agregarCarrito(usuarioId: number, productoId: number, cantidad: number) {
+    const existe = await this.prisma.itemCarrito.findUnique({
+      where: { usuarioId_productoId: { usuarioId, productoId } },
+    });
+
+    if (existe) {
+      return this.prisma.itemCarrito.update({
+        where: { id: existe.id },
+        data: { cantidad: existe.cantidad + cantidad },
+        include: { producto: true },
+      });
+    }
+
+    return this.prisma.itemCarrito.create({
+      data: { usuarioId, productoId, cantidad },
+      include: { producto: true },
+    });
+  }
+
+  async obtenerCarrito(usuarioId: number) {
+    return this.prisma.itemCarrito.findMany({
+      where: { usuarioId },
+      include: {
+        producto: {
+          include: { imagenes: { where: { principal: true }, take: 1 } },
+        },
+      },
+    });
+  }
+
+  async eliminarDelCarrito(usuarioId: number, productoId: number) {
+    return this.prisma.itemCarrito.delete({
+      where: { usuarioId_productoId: { usuarioId, productoId } },
+    });
+  }
+}
+
+@UseGuards(JwtAuthGuard)
+@Controller('usuarios')
+export class UsuariosController {
+  constructor(private usuariosService: UsuariosService) {}
+
+  @Get()
+  listar() {
+    return this.usuariosService.listar();
+  }
+
+  @Patch('perfil')
+  actualizarPerfil(@Request() req, @Body() datos: any) {
+    return this.usuariosService.actualizarPerfil(req.user.id, datos);
+  }
+
+  @Get('carrito')
+  obtenerCarrito(@Request() req) {
+    return this.usuariosService.obtenerCarrito(req.user.id);
+  }
+
+  @Patch('carrito')
+  agregarCarrito(@Request() req, @Body() body: { productoId: number; cantidad: number }) {
+    return this.usuariosService.agregarCarrito(req.user.id, body.productoId, body.cantidad || 1);
+  }
+
+  @Get('direcciones')
+  listarDirecciones(@Request() req) {
+    return this.usuariosService.listarDirecciones(req.user.id);
+  }
+}
+
+@Module({
+  controllers: [UsuariosController],
+  providers: [UsuariosService],
+  exports: [UsuariosService],
+})
+export class UsuariosModule {}

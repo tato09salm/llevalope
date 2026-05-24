@@ -1,0 +1,106 @@
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { JwtService } from '@nestjs/jwt';
+import * as bcrypt from 'bcrypt';
+import { PrismaService } from '../common/prisma/prisma.service';
+import { RegisterDto } from './dto/register.dto';
+import { LoginDto } from './dto/login.dto';
+
+@Injectable()
+export class AuthService {
+  constructor(
+    private prisma: PrismaService,
+    private jwtService: JwtService,
+  ) {}
+
+  async registrar(dto: RegisterDto) {
+    const existe = await this.prisma.usuario.findUnique({
+      where: { correo: dto.correo },
+    });
+
+    if (existe) {
+      throw new ConflictException('El correo ya está registrado');
+    }
+
+    const hash = await bcrypt.hash(dto.contrasena, 10);
+
+    const usuario = await this.prisma.usuario.create({
+      data: {
+        nombre: dto.nombre,
+        apellido: dto.apellido,
+        correo: dto.correo,
+        contrasena: hash,
+        telefono: dto.telefono,
+      },
+      select: {
+        id: true,
+        nombre: true,
+        apellido: true,
+        correo: true,
+        rol: true,
+        avatar: true,
+        creadoEn: true,
+      },
+    });
+
+    const token = this.generarToken(usuario);
+    return { usuario, token };
+  }
+
+  async iniciarSesion(dto: LoginDto) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { correo: dto.correo },
+    });
+
+    if (!usuario || !usuario.activo) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    const valido = await bcrypt.compare(dto.contrasena, usuario.contrasena);
+    if (!valido) {
+      throw new UnauthorizedException('Credenciales inválidas');
+    }
+
+    const { contrasena, ...datos } = usuario;
+    const token = this.generarToken(datos);
+
+    return { usuario: datos, token };
+  }
+
+  async perfil(usuarioId: number) {
+    return this.prisma.usuario.findUnique({
+      where: { id: usuarioId },
+      select: {
+        id: true,
+        nombre: true,
+        apellido: true,
+        correo: true,
+        telefono: true,
+        rol: true,
+        avatar: true,
+        verificado: true,
+        creadoEn: true,
+        direcciones: true,
+      },
+    });
+  }
+
+  async validarUsuario(correo: string, contrasena: string) {
+    const usuario = await this.prisma.usuario.findUnique({
+      where: { correo },
+    });
+
+    if (usuario && (await bcrypt.compare(contrasena, usuario.contrasena))) {
+      const { contrasena: _, ...resultado } = usuario;
+      return resultado;
+    }
+    return null;
+  }
+
+  private generarToken(usuario: any) {
+    return this.jwtService.sign({
+      sub: usuario.id,
+      correo: usuario.correo,
+      rol: usuario.rol,
+    });
+  }
+}

@@ -1,0 +1,60 @@
+version: '3.9'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: llevalope_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-llevalope}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-sa}
+    ports:
+      - "${DB_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/seeds/init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - llevalope_net
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: llevalope_backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://${DB_USER:-postgres}:${DB_PASSWORD:-sa}@postgres:5432/${DB_NAME:-llevalope}
+      JWT_SECRET: ${JWT_SECRET:-llevalope_secret_2024}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-7d}
+      PORT: 3001
+      NODE_ENV: production
+    ports:
+      - "3001:3001"
+    depends_on:
+      - postgres
+    networks:
+      - llevalope_net
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: llevalope_frontend
+    restart: unless-stopped
+    environment:
+      NEXT_PUBLIC_API_URL: http://backend:3001/api
+      NEXT_PUBLIC_APP_NAME: LlevaloPe
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    networks:
+      - llevalope_net
+
+volumes:
+  postgres_data:
+
+networks:
+  llevalope_net:
+    driver: bridge

@@ -1,0 +1,99 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&family=Montserrat:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --azul-oscuro: #0D1B2A;
+  --azul-corp: #1B263B;
+  --teal: #006D77;
+  --dorado: #D4AF37;
+  --crema: #F5F3EE;
+  --gris: #7A7D85;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  background-color: var(--crema);
+  color: var(--azul-oscuro);
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .btn-primario {
+    @apply bg-dorado text-azul-oscuro font-semibold px-6 py-3 rounded-lg hover:bg-dorado-claro transition-all duration-200 shadow-md hover:shadow-lg active:scale-95;
+  }
+
+  .btn-secundario {
+    @apply bg-teal text-white font-semibold px-6 py-3 rounded-lg hover:bg-opacity-90 transition-all duration-200 shadow-md;
+  }
+
+  .btn-outline {
+    @apply border-2 border-azul-oscuro text-azul-oscuro font-semibold px-6 py-3 rounded-lg hover:bg-azul-oscuro hover:text-white transition-all duration-200;
+  }
+
+  .card-producto {
+    @apply bg-white rounded-xl shadow-card hover:shadow-hover transition-all duration-300 overflow-hidden cursor-pointer;
+  }
+
+  .badge-oferta {
+    @apply bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full;
+  }
+
+  .badge-nuevo {
+    @apply bg-teal text-white text-xs font-bold px-2 py-1 rounded-full;
+  }
+
+  .seccion-titulo {
+    @apply text-2xl font-bold text-azul-oscuro font-montserrat;
+  }
+
+  .input-campo {
+    @apply w-full border border-gray-200 rounded-lg px-4 py-3 text-azul-oscuro focus:outline-none focus:border-teal focus:ring-2 focus:ring-teal focus:ring-opacity-20 transition-all;
+  }
+
+  .label-campo {
+    @apply block text-sm font-medium text-azul-corp mb-1;
+  }
+}
+
+/* Scrollbar elegante */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--crema);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--teal);
+  border-radius: 3px;
+}
+
+/* Animación de entrada */
+.animar-entrada {
+  animation: entradaSuave 0.5s ease-out forwards;
+}
+
+@keyframes entradaSuave {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
