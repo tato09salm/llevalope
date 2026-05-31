@@ -1,8 +1,9 @@
 {
-  "/admin/productos/page": "app/admin/productos/page.js",
-  "/admin/page": "app/admin/page.js",
-  "/admin/productos/[id]/page": "app/admin/productos/[id]/page.js",
-  "/admin/productos/nuevo/page": "app/admin/productos/nuevo/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/page": "app/page.js",
   "/productos/page": "app/productos/page.js",
-  "/page": "app/page.js"
+  "/productos/[slug]/page": "app/productos/[slug]/page.js",
+  "/carrito/page": "app/carrito/page.js",
+  "/admin/productos/page": "app/admin/productos/page.js",
+  "/admin/productos/[id]/page": "app/admin/productos/[id]/page.js"
 }

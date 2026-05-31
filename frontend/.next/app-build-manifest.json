@@ -11,16 +11,6 @@
       "static/chunks/main-app.js",
       "static/chunks/app/page.js"
     ],
-    "/productos/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/productos/page.js"
-    ],
-    "/carrito/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/carrito/page.js"
-    ],
     "/auth/iniciar-sesion/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -45,6 +35,66 @@
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/admin/productos/nuevo/page.js"
+    ],
+    "/admin/categorias/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/categorias/page.js"
+    ],
+    "/admin/categorias/nuevo/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/categorias/nuevo/page.js"
+    ],
+    "/productos/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/productos/page.js"
+    ],
+    "/admin/colores/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/colores/page.js"
+    ],
+    "/admin/colores/nuevo/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/colores/nuevo/page.js"
+    ],
+    "/admin/categorias/[id]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/categorias/[id]/page.js"
+    ],
+    "/productos/[slug]/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/productos/[slug]/page.js"
+    ],
+    "/admin/tallas/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/tallas/page.js"
+    ],
+    "/admin/tallas-colecciones/nuevo/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/tallas-colecciones/nuevo/page.js"
+    ],
+    "/admin/tallas/nuevo/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/tallas/nuevo/page.js"
+    ],
+    "/carrito/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/carrito/page.js"
+    ],
+    "/_not-found/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/_not-found/page.js"
     ]
   }
 }
