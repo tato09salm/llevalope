@@ -40,22 +40,22 @@ export class UsuariosService {
     return this.prisma.direccionUsuario.findMany({ where: { usuarioId } });
   }
 
-  async agregarCarrito(usuarioId: number, productoId: number, cantidad: number) {
+  async agregarCarrito(usuarioId: number, productoId: number, varianteId: number, cantidad: number) {
     const existe = await this.prisma.itemCarrito.findUnique({
-      where: { usuarioId_productoId: { usuarioId, productoId } },
+      where: { usuarioId_varianteId: { usuarioId, varianteId } },
     });
 
     if (existe) {
       return this.prisma.itemCarrito.update({
         where: { id: existe.id },
         data: { cantidad: existe.cantidad + cantidad },
-        include: { producto: true },
+        include: { producto: true, variante: true },
       });
     }
 
     return this.prisma.itemCarrito.create({
-      data: { usuarioId, productoId, cantidad },
-      include: { producto: true },
+      data: { usuarioId, productoId, varianteId, cantidad },
+      include: { producto: true, variante: true },
     });
   }
 
@@ -66,13 +66,14 @@ export class UsuariosService {
         producto: {
           include: { imagenes: { where: { principal: true }, take: 1 } },
         },
+        variante: true,
       },
     });
   }
 
-  async eliminarDelCarrito(usuarioId: number, productoId: number) {
+  async eliminarDelCarrito(usuarioId: number, varianteId: number) {
     return this.prisma.itemCarrito.delete({
-      where: { usuarioId_productoId: { usuarioId, productoId } },
+      where: { usuarioId_varianteId: { usuarioId, varianteId } },
     });
   }
 }
@@ -98,8 +99,8 @@ export class UsuariosController {
   }
 
   @Patch('carrito')
-  agregarCarrito(@Request() req, @Body() body: { productoId: number; cantidad: number }) {
-    return this.usuariosService.agregarCarrito(req.user.id, body.productoId, body.cantidad || 1);
+  agregarCarrito(@Request() req, @Body() body: { productoId: number; varianteId: number; cantidad: number }) {
+    return this.usuariosService.agregarCarrito(req.user.id, body.productoId, body.varianteId, body.cantidad || 1);
   }
 
   @Get('direcciones')

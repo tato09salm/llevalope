@@ -21,8 +21,14 @@ export interface Categoria {
   slug: string;
   descripcion?: string;
   imagen?: string;
-  icono?: string;
+  categoriaPadreId?: number | null;
+  categoriaPadre?: Categoria;
   subcategorias?: Categoria[];
+  activa: boolean;
+  orden: number;
+  creadoEn: string;
+  actualizadoEn: string;
+  cantidadProductos?: number;
 }
 
 export interface Marca {
@@ -32,24 +38,49 @@ export interface Marca {
   logo?: string;
 }
 
+export interface Color {
+  id: number;
+  nombre: string;
+  hex: string;
+  activo: boolean;
+  creadoEn: string;
+  actualizadoEn: string;
+}
+
+export interface SizeCollection {
+  id: number;
+  nombre: string;
+  orden: number;
+  activo: boolean;
+  creadoEn: string;
+  actualizadoEn: string;
+  tallas?: Size[];
+}
+
+export interface Size {
+  id: number;
+  nombre: string;
+  orden: number;
+  activo: boolean;
+  creadoEn: string;
+  actualizadoEn: string;
+  coleccionId?: number;
+  coleccion?: SizeCollection;
+}
+
 export interface Producto {
   id: number;
   nombre: string;
   slug: string;
   descripcion?: string;
   descripcionCorta?: string;
-  sku: string;
-  precio: number;
-  precioAnterior?: number;
-  porcentajeDescuento?: number;
   categoriaId: number;
   categoria?: Categoria;
   marca?: Marca;
-  stock: number;
-  stockMinimo: number;
+  peso?: number;
+  dimensiones?: any;
   activo: boolean;
   destacado: boolean;
-  enOferta: boolean;
   calificacion: number;
   totalResenas: number;
   totalVentas: number;
@@ -58,10 +89,13 @@ export interface Producto {
   variantes?: VarianteProducto[];
   resenas?: Resena[];
   creadoEn: string;
+  actualizadoEn: string;
 }
 
 export interface ImagenProducto {
   id: number;
+  productoId: number;
+  varianteId?: number | null;
   url: string;
   alt?: string;
   orden: number;
@@ -70,17 +104,33 @@ export interface ImagenProducto {
 
 export interface VarianteProducto {
   id: number;
-  nombre: string;
-  valor: string;
-  precio?: number;
+  productoId: number;
+  colorId?: number | null;
+  sizeId?: number | null;
+  sku: string;
+  precioBase: number;
+  precioOferta?: number | null;
+  porcentajeDescuento?: number | null;
   stock: number;
+  stockMinimo: number;
+  enOferta: boolean;
+  activo: boolean;
+  esPrincipal: boolean;
+  orden: number;
+  color?: Color;
+  size?: Size;
+  imagenes?: ImagenProducto[];
 }
 
 export interface ItemCarrito {
   id: number;
+  usuarioId: number;
   productoId: number;
-  producto: Producto;
+  varianteId: number;
   cantidad: number;
+  producto: Producto;
+  variante: VarianteProducto;
+  creadoEn: string;
 }
 
 export interface DireccionUsuario {

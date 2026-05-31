@@ -27,7 +27,7 @@ export class ReportesService {
         where: { creadoEn: { gte: inicioMes }, estadoPago: 'PAGADO' },
         _sum: { total: true },
       }),
-      this.prisma.producto.count({ where: { stock: { lte: 5 }, activo: true } }),
+      this.prisma.varianteProducto.count({ where: { stock: { lte: 5 }, activo: true } }),
       this.prisma.ticketSoporte.count({ where: { estado: 'ABIERTO' } }),
     ]);
 
@@ -58,7 +58,17 @@ export class ReportesService {
       where: { activo: true },
       orderBy: { totalVentas: 'desc' },
       take: limite,
-      select: { id: true, nombre: true, totalVentas: true, precio: true, imagenPrincipal: true },
+      select: { 
+        id: true, 
+        nombre: true, 
+        totalVentas: true, 
+        imagenPrincipal: true,
+        variantes: { 
+          where: { activo: true, esPrincipal: true }, 
+          take: 1,
+          select: { precioBase: true, precioOferta: true }
+        }
+      },
     });
   }
 }

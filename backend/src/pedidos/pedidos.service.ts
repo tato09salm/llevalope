@@ -17,25 +17,29 @@ export class PedidosService {
     const itemsValidados = [];
 
     for (const item of items) {
-      const producto = await this.prisma.producto.findUnique({
-        where: { id: item.productoId },
+      const variante = await this.prisma.varianteProducto.findUnique({
+        where: { id: item.varianteId },
+        include: { producto: true },
       });
 
-      if (!producto) throw new NotFoundException(`Producto ${item.productoId} no encontrado`);
-      if (producto.stock < item.cantidad) {
-        throw new BadRequestException(`Stock insuficiente para: ${producto.nombre}`);
+      if (!variante) throw new NotFoundException(`Variante ${item.varianteId} no encontrada`);
+      if (variante.stock < item.cantidad) {
+        throw new BadRequestException(`Stock insuficiente para: ${variante.producto.nombre}`);
       }
 
-      const itemSubtotal = Number(producto.precio) * item.cantidad;
+      const precio = variante.enOferta && variante.precioOferta ? variante.precioOferta : variante.precioBase;
+      const itemSubtotal = Number(precio) * item.cantidad;
       subtotal += itemSubtotal;
 
       itemsValidados.push({
-        productoId: item.productoId,
-        nombre: producto.nombre,
+        productoId: variante.productoId,
+        varianteId: item.varianteId,
+        nombre: variante.producto.nombre,
+        sku: variante.sku,
         cantidad: item.cantidad,
-        precioUnit: producto.precio,
+        precioUnit: precio,
         subtotal: itemSubtotal,
-        imagen: producto.imagenPrincipal,
+        imagen: variante.producto.imagenPrincipal,
       });
     }
 
@@ -71,11 +75,15 @@ export class PedidosService {
         include: { items: true, historial: true },
       });
 
-      // Actualizar stock
+      // Actualizar stock y totalVentas
       for (const item of itemsValidados) {
+        await tx.varianteProducto.update({
+          where: { id: item.varianteId },
+          data: { stock: { decrement: item.cantidad } },
+        });
         await tx.producto.update({
           where: { id: item.productoId },
-          data: { stock: { decrement: item.cantidad }, totalVentas: { increment: item.cantidad } },
+          data: { totalVentas: { increment: item.cantidad } },
         });
       }
 

@@ -4,121 +4,200 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Save, ArrowLeft, Package, Loader2 } from 'lucide-react';
-import { productosAPI, categoriasAPI } from '../../../../lib/api';
+import { Save, ArrowLeft, Package, Loader2, Plus, Trash2, Image as ImageIcon, Layers } from 'lucide-react';
+import { productosAPI, categoriasAPI, coloresAPI, sizeCollectionsAPI, sizesAPI } from '../../../../lib/api';
 import toast from 'react-hot-toast';
-import { Producto, Categoria } from '../../../../types';
+import VariantImagesDialog from '../../../../components/ui/variant-images-dialog';
+
+interface FormVariant {
+  id?: number;
+  colorId: number | null;
+  sizeId: number | null;
+  sku: string;
+  precioBase: string;
+  precioOferta: string;
+  porcentajeDescuento: number | null;
+  stock: string;
+  stockMinimo: string;
+  enOferta: boolean;
+  activo: boolean;
+  esPrincipal: boolean;
+  orden: number;
+  imagenes: { url: string; alt: string; orden: number; principal: boolean }[];
+}
 
 export default function EditarProductoPage() {
   const router = useRouter();
   const params = useParams();
   const id = Number(params.id);
+
   const [cargando, setCargando] = useState(false);
   const [cargandoDatos, setCargandoDatos] = useState(true);
-  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [categorias, setCategorias] = useState([]);
+  const [colores, setColores] = useState([]);
+  const [coleccionesTallas, setColeccionesTallas] = useState([]);
+  const [tallas, setTallas] = useState([]);
+  const [categoriaPadreId, setCategoriaPadreId] = useState(null);
+  const [subcategorias, setSubcategorias] = useState([]);
+
+  // Modal para editar imágenes de variante
+  const [variantImagesDialog, setVariantImagesDialog] = useState<{
+    isOpen: boolean;
+    variantIndex: number;
+  }>({ isOpen: false, variantIndex: 0 });
+
   const [form, setForm] = useState({
     nombre: '',
     slug: '',
     descripcion: '',
     descripcionCorta: '',
-    sku: '',
-    precio: 0,
-    precioAnterior: null,
-    porcentajeDescuento: 0,
     categoriaId: null,
     marcaId: null,
-    stock: 0,
-    stockMinimo: 5,
     activo: true,
     destacado: false,
-    enOferta: false,
     imagenPrincipal: '',
+    peso: '' as string | null,
   });
 
+  const [variantes, setVariantes] = useState([]);
+
   useEffect(() => {
-    Promise.all([cargarCategorias(), cargarProducto()]);
+    cargarDatos();
   }, [id]);
 
-  const cargarCategorias = async () => {
-    try {
-      const resp: any = await categoriasAPI.listar();
-      setCategorias(resp.datos || resp || []);
-    } catch {
-      toast.error('Error al cargar categorías');
+  useEffect(() => {
+    if (categoriaPadreId) {
+      const subs = categorias.filter((c) => c.categoriaPadreId === categoriaPadreId);
+      setSubcategorias(subs);
+    } else {
+      setSubcategorias([]);
     }
-  };
+  }, [categoriaPadreId, categorias]);
 
-  const cargarProducto = async () => {
+  const cargarDatos = async () => {
     setCargandoDatos(true);
     try {
-      const producto: any = await productosAPI.obtener('');
-    } catch {
+      const [catsRes, colsRes, collsRes, sizesRes, productoRes] = await Promise.all([
+        categoriasAPI.listar({ todos: true }),
+        coloresAPI.listar({ todos: true }),
+        sizeCollectionsAPI.listar({ todos: true }),
+        sizesAPI.listar({ todos: true }),
+        productosAPI.obtenerPorId(id),
+      ]);
+
+      setCategorias(Array.isArray(catsRes) ? catsRes : catsRes.datos || []);
+      setColores(Array.isArray(colsRes) ? colsRes : colsRes.datos || []);
+      setColeccionesTallas(Array.isArray(collsRes) ? collsRes : collsRes.datos || []);
+      setTallas(Array.isArray(sizesRes) ? sizesRes : sizesRes.datos || []);
+
+      const producto = productoRes;
+      
+      // Encontrar categoría padre
+      const catPadre = producto.categoria?.categoriaPadreId 
+        ? producto.categoria.categoriaPadreId 
+        : producto.categoria?.id;
+      setCategoriaPadreId(catPadre);
+
+      setForm({
+        nombre: producto.nombre || '',
+        slug: producto.slug || '',
+        descripcion: producto.descripcion || '',
+        descripcionCorta: producto.descripcionCorta || '',
+        categoriaId: producto.categoriaId || null,
+        subcategoriaId: producto.categoriaId || null, // Inicializar subcategoriaId
+        marcaId: producto.marcaId || null,
+        activo: producto.activo ?? true,
+        destacado: producto.destacado ?? false,
+        imagenPrincipal: producto.imagenPrincipal || '',
+        peso: producto.peso !== null && producto.peso !== undefined ? String(producto.peso) : '',
+      });
+
+      setVariantes((producto.variantes || []).map((v, idx) => ({
+        id: v.id,
+        colorId: v.colorId || null,
+        sizeId: v.sizeId || null,
+        sku: v.sku || '',
+        precioBase: v.precioBase || v.precio ? String(v.precioBase || v.precio) : '',
+        precioOferta: v.precioOferta ? String(v.precioOferta) : '',
+        porcentajeDescuento: v.porcentajeDescuento || null,
+        stock: v.stock ? String(v.stock) : '',
+        stockMinimo: v.stockMinimo ? String(v.stockMinimo) : '',
+        enOferta: v.enOferta ?? false,
+        activo: v.activo ?? true,
+        esPrincipal: idx === 0,
+        orden: idx,
+        imagenes: (v.imagenes || []).map(img => ({
+          url: img.url,
+          alt: img.alt || '',
+          orden: img.orden,
+          principal: img.principal,
+        })),
+      })));
+
+    } catch (error) {
+      toast.error('Error al cargar datos');
     } finally {
       setCargandoDatos(false);
     }
   };
 
-  useEffect(() => {
-    if (id) {
-      const fetchProducto = async () => {
-        setCargandoDatos(true);
-        try {
-          const productos: any = await productosAPI.listar({ limite: 100 });
-          const producto = (productos.datos || productos || []).find((p: Producto) => p.id === id);
-          if (producto) {
-            setForm({
-              nombre: producto.nombre || '',
-              slug: producto.slug || '',
-              descripcion: producto.descripcion || '',
-              descripcionCorta: producto.descripcionCorta || '',
-              sku: producto.sku || '',
-              precio: producto.precio || 0,
-              precioAnterior: producto.precioAnterior || null,
-              porcentajeDescuento: producto.porcentajeDescuento || 0,
-              categoriaId: producto.categoriaId || null,
-              marcaId: producto.marcaId || null,
-              stock: producto.stock || 0,
-              stockMinimo: producto.stockMinimo || 5,
-              activo: producto.activo ?? true,
-              destacado: producto.destacado ?? false,
-              enOferta: producto.enOferta ?? false,
-              imagenPrincipal: producto.imagenPrincipal || '',
-            });
-          }
-        } catch (err: any) {
-          toast.error('Error al cargar producto');
-        } finally {
-          setCargandoDatos(false);
-        }
-      };
-      fetchProducto();
-    }
-  }, [id]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (variantes.length === 0) {
+      toast.error('Debes agregar al menos una variante');
+      return;
+    }
+
+    if (!categoriaPadreId || !form.categoriaId) {
+      toast.error('Debes seleccionar categoría padre y categoría');
+      return;
+    }
+
     setCargando(true);
     try {
       await productosAPI.actualizar(id, {
         ...form,
-        precio: Number(form.precio),
-        precioAnterior: form.precioAnterior ? Number(form.precioAnterior) : null,
-        porcentajeDescuento: Number(form.porcentajeDescuento),
         categoriaId: form.categoriaId ? Number(form.categoriaId) : null,
         marcaId: form.marcaId ? Number(form.marcaId) : null,
-        stock: Number(form.stock),
-        stockMinimo: Number(form.stockMinimo),
+        peso: form.peso && form.peso !== '' ? Number(form.peso) : null,
+        imagenes: [], // No hay imágenes globales
+        variantes: variantes.map((v, idx) => {
+          const precioBaseNum = parseFloat(v.precioBase);
+          const precioOfertaNum = v.precioOferta ? parseFloat(v.precioOferta) : null;
+          const stockNum = parseFloat(v.stock);
+          const stockMinimoNum = parseFloat(v.stockMinimo);
+          
+          return {
+            id: v.id,
+            colorId: v.colorId,
+            sizeId: v.sizeId,
+            sku: v.sku,
+            precioBase: !isNaN(precioBaseNum) ? precioBaseNum : 0,
+            precioOferta: precioOfertaNum !== null && !isNaN(precioOfertaNum) ? precioOfertaNum : null,
+            porcentajeDescuento: v.porcentajeDescuento ? Number(v.porcentajeDescuento) : null,
+            stock: !isNaN(stockNum) ? stockNum : 0,
+            stockMinimo: !isNaN(stockMinimoNum) ? stockMinimoNum : 5,
+            enOferta: 
+              precioOfertaNum !== null && !isNaN(precioOfertaNum) && 
+              !isNaN(precioBaseNum) && precioBaseNum > precioOfertaNum,
+            activo: v.activo,
+            esPrincipal: idx === 0,
+            orden: idx,
+            imagenes: v.imagenes.map((img, imgIdx) => ({ ...img, orden: imgIdx })),
+          };
+        }),
       });
       toast.success('Producto actualizado exitosamente');
       router.push('/admin/productos');
-    } catch (err: any) {
+    } catch (err) {
       toast.error(err.message || 'Error al actualizar producto');
     } finally {
       setCargando(false);
     }
   };
 
-  const generarSlug = (texto: string) => {
+  const generarSlug = (texto) => {
     return texto
       .toLowerCase()
       .normalize('NFD')
@@ -129,15 +208,120 @@ export default function EditarProductoPage() {
       .trim();
   };
 
-  const handleNombreChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const generarSku = (categoriaPadre, subcategoria, numero, color, talla) => {
+    const inicialesCategoria = (categoriaPadre || '').substring(0, 2).toUpperCase();
+    const inicialesSubcategoria = (subcategoria || '').substring(0, 1).toUpperCase();
+    const numeroFormateado = String(numero).padStart(3, '0');
+    
+    let sku = `${inicialesCategoria}${inicialesSubcategoria}-${numeroFormateado}`;
+    
+    if (color) {
+      sku += `-${color.toUpperCase()}`;
+    }
+    
+    if (talla) {
+      sku += `-${talla.toUpperCase()}`;
+    }
+    
+    return sku;
+  };
+
+  const actualizarSkus = () => {
+    // Obtener nombres de categorías
+    const categoriaPadre = categorias.find(c => c.id === categoriaPadreId)?.nombre || '';
+    const subcategoria = categorias.find(c => c.id === form.categoriaId)?.nombre || '';
+    
+    setVariantes(prev => prev.map((variante, idx) => {
+      const color = colores.find(c => c.id === variante.colorId)?.nombre || '';
+      const talla = tallas.find(t => t.id === variante.sizeId)?.nombre || '';
+      const nuevoSku = generarSku(categoriaPadre, subcategoria, idx + 1, color, talla);
+      
+      return { ...variante, sku: nuevoSku };
+    }));
+  };
+
+  const handleNombreChange = (e) => {
     const nombre = e.target.value;
     setForm({ ...form, nombre, slug: generarSlug(nombre) });
   };
 
+  const agregarVariante = () => {
+    const categoriaPadre = categorias.find(c => c.id === categoriaPadreId)?.nombre || '';
+    const subcategoria = categorias.find(c => c.id === form.categoriaId)?.nombre || '';
+    const numero = variantes.length + 1;
+    
+    setVariantes([...variantes, {
+      colorId: null,
+      sizeId: null,
+      sku: generarSku(categoriaPadre, subcategoria, numero, '', ''),
+      precioBase: '',
+      precioOferta: '',
+      porcentajeDescuento: null,
+      stock: '',
+      stockMinimo: '',
+      enOferta: false,
+      activo: true,
+      esPrincipal: variantes.length === 0,
+      orden: variantes.length,
+      imagenes: [],
+    }]);
+  };
+
+  const eliminarVariante = (index) => {
+    const nuevasVariantes = variantes.filter((_, i) => i !== index);
+    // Re-generar SKUs después de eliminar
+    setVariantes(nuevasVariantes);
+    // Actualizamos los SKUs después del renderizado
+    setTimeout(actualizarSkus, 0);
+  };
+
+  const actualizarVariante = (index, data) => {
+    const newVars = [...variantes];
+    let updatedData = { ...newVars[index], ...data };
+    
+    // Generar nuevo SKU si cambió color o talla
+    if (data.colorId !== undefined || data.sizeId !== undefined) {
+      const categoriaPadre = categorias.find(c => c.id === categoriaPadreId)?.nombre || '';
+      const subcategoria = categorias.find(c => c.id === form.categoriaId)?.nombre || '';
+      const color = colores.find(c => c.id === (data.colorId !== undefined ? data.colorId : updatedData.colorId))?.nombre || '';
+      const talla = tallas.find(t => t.id === (data.sizeId !== undefined ? data.sizeId : updatedData.sizeId))?.nombre || '';
+      
+      updatedData.sku = generarSku(categoriaPadre, subcategoria, index + 1, color, talla);
+    }
+    
+    // Calcular porcentaje de descuento automáticamente
+    const precioBaseNum = parseFloat(updatedData.precioBase);
+    const precioOfertaNum = parseFloat(updatedData.precioOferta);
+    
+    if (
+      !isNaN(precioBaseNum) && !isNaN(precioOfertaNum) &&
+      precioBaseNum > 0 && precioOfertaNum > 0 &&
+      precioBaseNum > precioOfertaNum
+    ) {
+      const descuento = Math.round(((precioBaseNum - precioOfertaNum) / precioBaseNum) * 100);
+      updatedData.porcentajeDescuento = descuento;
+      updatedData.enOferta = true;
+    } else {
+      updatedData.porcentajeDescuento = null;
+      updatedData.enOferta = false;
+    }
+    
+    newVars[index] = updatedData;
+    setVariantes(newVars);
+  };
+
+  const actualizarImagenesVariante = (variantIndex, newImages) => {
+    const newVars = [...variantes];
+    newVars[variantIndex].imagenes = newImages;
+    setVariantes(newVars);
+  };
+
+  const categoriasPadre = categorias.filter((c) => !c.categoriaPadreId);
+
   if (cargandoDatos) {
     return (
       <div className="min-h-screen bg-crema flex items-center justify-center">
-        <Loader2 size={48} className="animate-spin text-teal" />
+        <Loader2 size={40} className="animate-spin text-teal" />
       </div>
     );
   }
@@ -145,7 +329,7 @@ export default function EditarProductoPage() {
   return (
     <div className="min-h-screen bg-crema">
       <div className="bg-white border-b border-gray-100 px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link href="/admin/productos" className="text-gris-elegante hover:text-teal transition-colors">
               <ArrowLeft size={20} />
@@ -159,198 +343,309 @@ export default function EditarProductoPage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto px-6 py-6">
+      <div className="max-w-6xl mx-auto px-6 py-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-card p-8"
+          className="space-y-6"
         >
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className="label-campo">Nombre del Producto *</label>
-                <input
-                  type="text"
-                  value={form.nombre}
-                  onChange={handleNombreChange}
-                  placeholder="Ej: Audífonos Sony WH-1000XM5"
-                  required
-                  className="input-campo"
-                />
-              </div>
-
-              <div>
-                <label className="label-campo">Slug *</label>
-                <input
-                  type="text"
-                  value={form.slug}
-                  onChange={(e) => setForm({ ...form, slug: e.target.value })}
-                  placeholder="ej: audifonos-sony-wh1000xm5"
-                  required
-                  className="input-campo"
-                />
-              </div>
-
-              <div>
-                <label className="label-campo">SKU *</label>
-                <input
-                  type="text"
-                  value={form.sku}
-                  onChange={(e) => setForm({ ...form, sku: e.target.value })}
-                  placeholder="Ej: SON-AUD-001"
-                  required
-                  className="input-campo"
-                />
-              </div>
-
-              <div>
-                <label className="label-campo">Precio *</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={form.precio}
-                  onChange={(e) => setForm({ ...form, precio: Number(e.target.value) })}
-                  placeholder="0.00"
-                  required
-                  className="input-campo"
-                />
-              </div>
-
-              <div>
-                <label className="label-campo">Precio Anterior</label>
-                <input
-                  type="number"
-                  step="0.01"
-                  value={form.precioAnterior || ''}
-                  onChange={(e) => setForm({ ...form, precioAnterior: e.target.value ? Number(e.target.value) : null })}
-                  placeholder="0.00"
-                  className="input-campo"
-                />
-              </div>
-
-              <div>
-                <label className="label-campo">% Descuento</label>
-                <input
-                  type="number"
-                  value={form.porcentajeDescuento}
-                  onChange={(e) => setForm({ ...form, porcentajeDescuento: Number(e.target.value) })}
-                  placeholder="0"
-                  className="input-campo"
-                />
-              </div>
-
-              <div>
-                <label className="label-campo">Categoría</label>
-                <select
-                  value={form.categoriaId || ''}
-                  onChange={(e) => setForm({ ...form, categoriaId: e.target.value ? Number(e.target.value) : null })}
-                  className="input-campo"
-                >
-                  <option value="">Seleccionar categoría</option>
-                  {categorias.map((c) => (
-                    <option key={c.id} value={c.id}>{c.nombre}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="label-campo">Stock</label>
-                <input
-                  type="number"
-                  value={form.stock}
-                  onChange={(e) => setForm({ ...form, stock: Number(e.target.value) })}
-                  placeholder="0"
-                  className="input-campo"
-                />
-              </div>
-
-              <div>
-                <label className="label-campo">Stock Mínimo</label>
-                <input
-                  type="number"
-                  value={form.stockMinimo}
-                  onChange={(e) => setForm({ ...form, stockMinimo: Number(e.target.value) })}
-                  placeholder="5"
-                  className="input-campo"
-                />
-              </div>
-
-              <div>
-                <label className="label-campo">Imagen Principal URL</label>
-                <input
-                  type="text"
-                  value={form.imagenPrincipal}
-                  onChange={(e) => setForm({ ...form, imagenPrincipal: e.target.value })}
-                  placeholder="https://ejemplo.com/imagen.jpg"
-                  className="input-campo"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="label-campo">Descripción Corta</label>
-                <input
-                  type="text"
-                  value={form.descripcionCorta}
-                  onChange={(e) => setForm({ ...form, descripcionCorta: e.target.value })}
-                  placeholder="Breve descripción del producto"
-                  className="input-campo"
-                />
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="label-campo">Descripción</label>
-                <textarea
-                  value={form.descripcion}
-                  onChange={(e) => setForm({ ...form, descripcion: e.target.value })}
-                  placeholder="Descripción completa del producto"
-                  rows={4}
-                  className="input-campo resize-none"
-                />
-              </div>
-
-              <div className="md:col-span-2 flex flex-wrap gap-4">
-                <label className="flex items-center gap-2 cursor-pointer">
+            <div className="bg-white rounded-2xl shadow-card p-8">
+              <h2 className="text-lg font-semibold text-azul-oscuro mb-6">Datos Básicos</h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className="label-campo">Nombre del Producto *</label>
+                  <input type="text" value={form.nombre} onChange={handleNombreChange} required className="input-campo" />
+                </div>
+                <div>
+                  <label className="label-campo">Categoría Padre *</label>
+                  <select
+                    value={categoriaPadreId || ''}
+                    onChange={(e) => {
+                      const nuevoId = e.target.value ? Number(e.target.value) : null;
+                      setCategoriaPadreId(nuevoId);
+                      // Resetear la subcategoría cuando cambie la categoría padre
+                      setForm({ ...form, categoriaId: null, subcategoriaId: null });
+                      // Actualizar los SKUs después de que se actualice el estado
+                      setTimeout(() => {
+                        actualizarSkus();
+                      }, 0);
+                    }}
+                    className="input-campo"
+                    required
+                  >
+                    <option value="">Seleccionar categoría padre</option>
+                    {categoriasPadre.map((c) => (
+                      <option key={c.id} value={c.id}>{c.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+                {categoriaPadreId && (
+                  <div>
+                    <label className="label-campo">Subcategoría *</label>
+                    <select
+                      value={form.categoriaId || ''}
+                      onChange={(e) => {
+                        const nuevoId = e.target.value ? Number(e.target.value) : null;
+                        setForm({ ...form, categoriaId: nuevoId, subcategoriaId: nuevoId });
+                        // Actualizar los SKUs después de que se actualice el estado
+                        setTimeout(() => {
+                          actualizarSkus();
+                        }, 0);
+                      }}
+                      className="input-campo"
+                      required
+                    >
+                      <option value="">Seleccionar subcategoría</option>
+                      {subcategorias.map((c) => (
+                        <option key={c.id} value={c.id}>{c.nombre}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+                {!categoriaPadreId && (
+                  <div className="opacity-50">
+                    <label className="label-campo">Subcategoría</label>
+                    <select
+                      disabled
+                      className="input-campo cursor-not-allowed"
+                    >
+                      <option value="">Primero selecciona categoría padre</option>
+                    </select>
+                  </div>
+                )}
+                <div>
+                  <label className="label-campo">Peso (kg)</label>
                   <input
-                    type="checkbox"
-                    checked={form.activo}
-                    onChange={(e) => setForm({ ...form, activo: e.target.checked })}
-                    className="w-4 h-4 text-teal rounded"
+                    type="text"
+                    value={form.peso || ''}
+                    onChange={(e) => {
+                      // Permitir solo números, punto decimal, vacío
+                      const value = e.target.value;
+                      if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                        setForm({ ...form, peso: value });
+                      }
+                    }}
+                    placeholder="0.000"
+                    className="input-campo"
                   />
-                  <span className="text-sm text-azul-oscuro">Activo</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.destacado}
-                    onChange={(e) => setForm({ ...form, destacado: e.target.checked })}
-                    className="w-4 h-4 text-teal rounded"
-                  />
-                  <span className="text-sm text-azul-oscuro">Destacado</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={form.enOferta}
-                    onChange={(e) => setForm({ ...form, enOferta: e.target.checked })}
-                    className="w-4 h-4 text-teal rounded"
-                  />
-                  <span className="text-sm text-azul-oscuro">En Oferta</span>
-                </label>
+                </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-3 cursor-pointer select-none">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        checked={form.destacado}
+                        onChange={(e) => setForm({ ...form, destacado: e.target.checked })}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-teal rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal"></div>
+                    </div>
+                    <span className="text-sm font-medium text-azul-oscuro">Producto Destacado</span>
+                  </label>
+                </div>
+                <div>
+                  <label className="label-campo">Descripción Corta</label>
+                  <input type="text" value={form.descripcionCorta} onChange={(e) => setForm({ ...form, descripcionCorta: e.target.value })} className="input-campo" />
+                </div>
+                <div className="md:col-span-2">
+                  <label className="label-campo">Descripción</label>
+                  <textarea value={form.descripcion} onChange={(e) => setForm({ ...form, descripcion: e.target.value })} rows={4} className="input-campo resize-none" />
+                </div>
               </div>
             </div>
 
-            <div className="flex justify-end gap-4 pt-4 border-t border-gray-100">
-              <Link
-                href="/admin/productos"
-                className="btn-outline px-6 py-3 text-base"
-              >
-                Cancelar
-              </Link>
-              <button
-                type="submit"
-                disabled={cargando}
-                className="btn-primario px-6 py-3 text-base flex items-center gap-2"
-              >
+            <div className="bg-white rounded-2xl shadow-card p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-lg font-semibold text-azul-oscuro flex items-center gap-2">
+                  <Layers size={20} /> Variantes del Producto
+                </h2>
+                <button type="button" onClick={agregarVariante} className="btn-primario flex items-center gap-2">
+                  <Plus size={16} /> Agregar Variante
+                </button>
+              </div>
+
+              {variantes.length > 0 && (
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="bg-gray-50 border-b border-gray-200">
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-azul-oscuro">SKU</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-azul-oscuro">Color</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-azul-oscuro">Talla</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-azul-oscuro">Precio Base</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-azul-oscuro">Precio Oferta</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-azul-oscuro">Stock</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-azul-oscuro">Stock Mínimo</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-azul-oscuro">Imágenes</th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-azul-oscuro">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {variantes.map((variant, idx) => {
+                        // Calcular porcentaje de descuento
+                        let tieneOferta = false;
+                        let porcentaje = null;
+                        
+                        const precioBaseNum = parseFloat(variant.precioBase);
+                        const precioOfertaNum = parseFloat(variant.precioOferta);
+                        
+                        if (
+                          !isNaN(precioBaseNum) && !isNaN(precioOfertaNum) &&
+                          precioBaseNum > 0 && precioOfertaNum > 0 &&
+                          precioBaseNum > precioOfertaNum
+                        ) {
+                          tieneOferta = true;
+                          const calculated = Math.round(((precioBaseNum - precioOfertaNum) / precioBaseNum) * 100);
+                          porcentaje = calculated > 0 ? calculated : null;
+                        }
+                        
+                        return (
+                          <tr key={idx} className="hover:bg-gray-50">
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={variant.sku}
+                                onChange={(e) => actualizarVariante(idx, { sku: e.target.value })}
+                                className="input-campo text-sm"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <select
+                                value={variant.colorId || ''}
+                                onChange={(e) => actualizarVariante(idx, { colorId: e.target.value ? Number(e.target.value) : null })}
+                                className="input-campo text-sm"
+                              >
+                                <option value="">Ninguno</option>
+                                {colores.map((c) => (
+                                  <option key={c.id} value={c.id}>{c.nombre}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-4 py-3">
+                              <select
+                                value={variant.sizeId || ''}
+                                onChange={(e) => actualizarVariante(idx, { sizeId: e.target.value ? Number(e.target.value) : null })}
+                                className="input-campo text-sm"
+                              >
+                                <option value="">Ninguna</option>
+                                {tallas.map((t) => (
+                                  <option key={t.id} value={t.id}>{t.nombre}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={variant.precioBase}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                    actualizarVariante(idx, { precioBase: value });
+                                  }
+                                }}
+                                className="input-campo text-sm"
+                                placeholder="0.00"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <div>
+                                <input
+                                  type="text"
+                                  value={variant.precioOferta}
+                                  onChange={(e) => {
+                                    const value = e.target.value;
+                                    if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                      actualizarVariante(idx, { precioOferta: value });
+                                    }
+                                  }}
+                                  className="input-campo text-sm"
+                                  placeholder="Precio oferta"
+                                />
+                                {tieneOferta && porcentaje && (
+                                  <span className="mt-1 inline-block text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">
+                                    -{porcentaje}%
+                                  </span>
+                                )}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={variant.stock}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                    actualizarVariante(idx, { stock: value });
+                                  }
+                                }}
+                                className="input-campo text-sm"
+                                placeholder="0"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input
+                                type="text"
+                                value={variant.stockMinimo}
+                                onChange={(e) => {
+                                  const value = e.target.value;
+                                  if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                                    actualizarVariante(idx, { stockMinimo: value });
+                                  }
+                                }}
+                                className="input-campo text-sm"
+                                placeholder="0"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-1">
+                                {variant.imagenes.length > 0 && (
+                                  <span className="text-xs text-gris-elegante">
+                                    {variant.imagenes.length} img
+                                  </span>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setVariantImagesDialog({ isOpen: true, variantIndex: idx })}
+                                  className="p-1.5 text-teal hover:bg-teal-50 rounded-lg transition-colors"
+                                  title="Gestionar imágenes"
+                                >
+                                  <ImageIcon size={14} />
+                                </button>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3">
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => eliminarVariante(idx)}
+                                  className="p-1 text-red-500 hover:bg-red-50 rounded transition-colors"
+                                >
+                                  <Trash2 size={14} />
+                                </button>
+                                {variant.esPrincipal && (
+                                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">Principal</span>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+                
+              {variantes.length === 0 && (
+                <div className="text-center py-8 text-gris-elegante">
+                  No hay variantes. Agrega una para empezar.
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-4 pt-4">
+              <Link href="/admin/productos" className="btn-outline px-6 py-3 text-base">Cancelar</Link>
+              <button type="submit" disabled={cargando} className="btn-primario px-6 py-3 text-base flex items-center gap-2">
                 {cargando ? (
                   <><Loader2 size={18} className="animate-spin" /> Guardando...</>
                 ) : (
@@ -361,6 +656,15 @@ export default function EditarProductoPage() {
           </form>
         </motion.div>
       </div>
+
+      {/* Modal para editar imágenes de variante */}
+      <VariantImagesDialog
+        isOpen={variantImagesDialog.isOpen}
+        onClose={() => setVariantImagesDialog({ isOpen: false, variantIndex: 0 })}
+        variantIndex={variantImagesDialog.variantIndex}
+        images={variantes[variantImagesDialog.variantIndex]?.imagenes || []}
+        onUpdateImages={actualizarImagenesVariante}
+      />
     </div>
   );
 }

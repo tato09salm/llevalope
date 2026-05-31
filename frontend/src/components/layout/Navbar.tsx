@@ -9,14 +9,29 @@ import {
 } from 'lucide-react';
 import { useCarritoStore } from '../../store/carrito.store';
 import { useAuthStore } from '../../store/auth.store';
+import { categoriasAPI } from '../../lib/api';
+import type { Categoria } from '../../types';
 
 export default function Navbar() {
   const [menuAbierto, setMenuAbierto] = useState(false);
   const [busqueda, setBusqueda] = useState('');
   const [scrolled, setScrolled] = useState(false);
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
   const { totalItems } = useCarritoStore();
   const { usuario, cerrarSesion } = useAuthStore();
   const router = useRouter();
+
+  useEffect(() => {
+    const cargarCategorias = async () => {
+      try {
+        const datos = await categoriasAPI.listar();
+        setCategorias(datos);
+      } catch (error) {
+        console.error('Error al cargar categorías:', error);
+      }
+    };
+    cargarCategorias();
+  }, []);
 
   useEffect(() => {
     const manejarScroll = () => setScrolled(window.scrollY > 20);
@@ -31,14 +46,7 @@ export default function Navbar() {
     }
   };
 
-  const categorias = [
-    { nombre: 'Tecnología', slug: 'tecnologia' },
-    { nombre: 'Hogar', slug: 'hogar' },
-    { nombre: 'Moda', slug: 'moda' },
-    { nombre: 'Belleza', slug: 'belleza' },
-    { nombre: 'Deportes', slug: 'deportes' },
-    { nombre: 'Alimentos', slug: 'alimentos' },
-  ];
+  const categoriasPadre = categorias.filter(cat => !cat.categoriaPadreId);
 
   return (
     <>
@@ -195,14 +203,31 @@ export default function Navbar() {
         <div className="bg-azul-oscuro border-t border-white border-opacity-10 hidden md:block">
           <div className="max-w-7xl mx-auto px-4">
             <div className="flex items-center gap-1">
-              {categorias.map((cat) => (
-                <Link
-                  key={cat.slug}
-                  href={`/productos?categoria=${cat.slug}`}
-                  className="px-4 py-2.5 text-crema text-sm hover:text-dorado hover:bg-white hover:bg-opacity-5 transition-all duration-200 rounded"
-                >
-                  {cat.nombre}
-                </Link>
+              {categoriasPadre.map((cat) => (
+                <div key={cat.id} className="relative group">
+                  <Link
+                    href={`/productos?categoria=${cat.slug}`}
+                    className="px-4 py-2.5 text-crema text-sm hover:text-dorado hover:bg-white hover:bg-opacity-5 transition-all duration-200 rounded flex items-center gap-1"
+                  >
+                    {cat.nombre}
+                    {cat.subcategorias && cat.subcategorias.length > 0 && (
+                      <ChevronDown size={12} />
+                    )}
+                  </Link>
+                  {cat.subcategorias && cat.subcategorias.length > 0 && (
+                    <div className="absolute left-0 mt-0 w-56 bg-white rounded-b-xl shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-50">
+                      {cat.subcategorias.map((subcat) => (
+                        <Link
+                          key={subcat.id}
+                          href={`/productos?categoria=${subcat.slug}`}
+                          className="flex items-center gap-2 px-4 py-2.5 text-azul-oscuro hover:bg-crema text-sm transition-colors"
+                        >
+                          {subcat.nombre}
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
               ))}
               <Link
                 href="/ofertas"
@@ -230,7 +255,7 @@ export default function Navbar() {
               </button>
             </form>
             <div className="grid grid-cols-2 gap-2">
-              {categorias.map((cat) => (
+              {categoriasPadre.map((cat) => (
                 <Link
                   key={cat.slug}
                   href={`/productos?categoria=${cat.slug}`}

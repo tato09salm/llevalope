@@ -79,8 +79,7 @@ model Categoria {
   nombre        String   @db.VarChar(100)
   slug          String   @unique @db.VarChar(100)
   descripcion   String?  @db.Text
-  imagen        String?  @db.VarChar(500)
-  icono         String?  @db.VarChar(100)
+  imagen        String?  @db.Text
   categoriaPadreId Int? @map("categoria_padre_id")
   activa        Boolean  @default(true)
   orden         Int      @default(0)
@@ -95,68 +94,77 @@ model Categoria {
 }
 
 model Producto {
-  id              Int      @id @default(autoincrement())
-  nombre          String   @db.VarChar(300)
-  slug            String   @unique @db.VarChar(300)
-  descripcion     String?  @db.Text
-  descripcionCorta String? @db.VarChar(500) @map("descripcion_corta")
-  sku             String   @unique @db.VarChar(100)
-  precio          Decimal  @db.Decimal(10, 2)
-  precioAnterior  Decimal? @db.Decimal(10, 2) @map("precio_anterior")
-  porcentajeDescuento Int? @default(0) @map("porcentaje_descuento")
-  categoriaId     Int      @map("categoria_id")
-  marcaId         Int?     @map("marca_id")
-  stock           Int      @default(0)
-  stockMinimo     Int      @default(5) @map("stock_minimo")
-  peso            Decimal? @db.Decimal(8, 3)
+  id              Int                @id @default(autoincrement())
+  nombre          String             @db.VarChar(300)
+  slug            String             @unique @db.VarChar(300)
+  descripcion     String?            @db.Text
+  descripcionCorta String?          @db.VarChar(500) @map("descripcion_corta")
+  categoriaId     Int               @map("categoria_id")
+  marcaId         Int?              @map("marca_id")
+  peso            Decimal?            @db.Decimal(8, 3)
   dimensiones     Json?
-  activo          Boolean  @default(true)
-  destacado       Boolean  @default(false)
-  enOferta        Boolean  @default(false) @map("en_oferta")
-  calificacion    Decimal  @default(0) @db.Decimal(3, 2)
-  totalResenas    Int      @default(0) @map("total_resenas")
-  totalVentas     Int      @default(0) @map("total_ventas")
-  imagenPrincipal String?  @db.VarChar(500) @map("imagen_principal")
-  creadoEn        DateTime @default(now()) @map("creado_en")
-  actualizadoEn   DateTime @updatedAt @map("actualizado_en")
+  activo          Boolean            @default(true)
+  destacado       Boolean            @default(false)
+  calificacion    Decimal            @default(0) @db.Decimal(3, 2)
+  totalResenas    Int                @default(0) @map("total_resenas")
+  totalVentas     Int                @default(0) @map("total_ventas")
+  imagenPrincipal String?            @db.VarChar(500) @map("imagen_principal")
+  creadoEn        DateTime           @default(now()) @map("creado_en")
+  actualizadoEn DateTime           @updatedAt @map("actualizado_en")
 
-  categoria       Categoria  @relation(fields: [categoriaId], references: [id])
-  marca           Marca?     @relation(fields: [marcaId], references: [id])
-  imagenes        ImagenProducto[]
+  categoria       Categoria          @relation(fields: [categoriaId], references: [id])
+  marca           Marca?             @relation(fields: [marcaId], references: [id])
+  imagenes        ImagenProducto[]   @relation("ImagenProducto_producto")
   variantes       VarianteProducto[]
   resenas         Resena[]
-  itemsPedido     ItemPedido[]
   itemsCarrito    ItemCarrito[]
-  itemsWishlist   ItemWishlist[]
-  movimientosInventario MovimientoInventario[]
+  itemsPedido     ItemPedido[]
   itemsOrdenCompra ItemOrdenCompra[]
+  movimientosInventario MovimientoInventario[]
+  itemsWishlist   ItemWishlist[]
 
   @@map("productos")
 }
 
 model ImagenProducto {
-  id          Int     @id @default(autoincrement())
-  productoId  Int     @map("producto_id")
-  url         String  @db.VarChar(500)
-  alt         String? @db.VarChar(200)
-  orden       Int     @default(0)
-  principal   Boolean @default(false)
+  id          Int                @id @default(autoincrement())
+  productoId  Int                @map("producto_id")
+  varianteId Int?               @map("variante_id")
+  url         String             @db.Text
+  alt         String?            @db.VarChar(200)
+  orden       Int                @default(0)
+  principal   Boolean            @default(false)
 
-  producto    Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  producto    Producto           @relation("ImagenProducto_producto", fields: [productoId], references: [id], onDelete: Cascade)
+  variante    VarianteProducto?  @relation("ImagenProducto_variante", fields: [varianteId], references: [id])
 
   @@map("imagenes_producto")
 }
 
 model VarianteProducto {
-  id          Int     @id @default(autoincrement())
-  productoId  Int     @map("producto_id")
-  nombre      String  @db.VarChar(100)
-  valor       String  @db.VarChar(100)
-  precio      Decimal? @db.Decimal(10, 2)
-  stock       Int     @default(0)
-  sku         String? @db.VarChar(100)
+  id                  Int                @id @default(autoincrement())
+  productoId          Int                @map("producto_id")
+  colorId             Int?               @map("color_id")
+  sizeId              Int?               @map("size_id")
+  sku                 String             @unique @db.VarChar(100)
+  precioBase          Decimal            @db.Decimal(10, 2) @map("precio_base")
+  precioOferta        Decimal?           @db.Decimal(10, 2) @map("precio_oferta")
+  porcentajeDescuento Int?               @default(0) @map("porcentaje_descuento")
+  stock               Int                @default(0)
+  stockMinimo         Int                @default(5) @map("stock_minimo")
+  enOferta            Boolean            @default(false) @map("en_oferta")
+  activo              Boolean            @default(true)
+  esPrincipal         Boolean            @default(false) @map("es_principal")
+  orden               Int                @default(0)
 
-  producto    Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  producto            Producto           @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  color               Color?             @relation(fields: [colorId], references: [id])
+  size                Size?              @relation(fields: [sizeId], references: [id])
+  imagenes            ImagenProducto[]   @relation("ImagenProducto_variante")
+  itemsPedido         ItemPedido[]
+  itemsCarrito        ItemCarrito[]
+  movimientosInventario MovimientoInventario[]
+  itemsOrdenCompra    ItemOrdenCompra[]
 
   @@map("variantes_producto")
 }
@@ -175,21 +183,64 @@ model Marca {
   @@map("marcas")
 }
 
+model Color {
+  id            Int                @id @default(autoincrement())
+  nombre        String             @db.VarChar(50)
+  hex           String             @unique @db.VarChar(7)
+  activo        Boolean            @default(true)
+  creadoEn      DateTime           @default(now()) @map("creado_en")
+  actualizadoEn DateTime           @updatedAt @map("actualizado_en")
+
+  variantes     VarianteProducto[]
+
+  @@map("colores")
+}
+
+model SizeCollection {
+  id            Int      @id @default(autoincrement())
+  nombre        String   @unique @db.VarChar(100)
+  orden         Int      @default(0)
+  activo        Boolean  @default(true)
+  creadoEn      DateTime @default(now()) @map("creado_en")
+  actualizadoEn DateTime @updatedAt @map("actualizado_en")
+
+  tallas        Size[]   @relation("TallasColeccion")
+
+  @@map("tallas_colecciones")
+}
+
+model Size {
+  id               Int                @id @default(autoincrement())
+  nombre           String             @db.VarChar(50)
+  orden            Int                @default(0)
+  activo           Boolean            @default(true)
+  creadoEn         DateTime           @default(now()) @map("creado_en")
+  actualizadoEn    DateTime           @updatedAt @map("actualizado_en")
+  coleccionId      Int?               @map("coleccion_id")
+  
+  coleccion        SizeCollection?    @relation("TallasColeccion", fields: [coleccionId], references: [id])
+  variantes        VarianteProducto[]
+
+  @@map("tallas")
+}
+
 // ========================
 // CARRITO Y WISHLIST
 // ========================
 
 model ItemCarrito {
-  id          Int     @id @default(autoincrement())
-  usuarioId   Int     @map("usuario_id")
-  productoId  Int     @map("producto_id")
-  cantidad    Int     @default(1)
-  creadoEn    DateTime @default(now()) @map("creado_en")
+  id          Int                @id @default(autoincrement())
+  usuarioId   Int                @map("usuario_id")
+  productoId  Int                @map("producto_id")
+  varianteId  Int                @map("variante_id")
+  cantidad    Int                @default(1)
+  creadoEn    DateTime           @default(now()) @map("creado_en")
 
-  usuario     Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  producto    Producto @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  usuario     Usuario            @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  producto    Producto           @relation(fields: [productoId], references: [id], onDelete: Cascade)
+  variante    VarianteProducto   @relation(fields: [varianteId], references: [id], onDelete: Cascade)
 
-  @@unique([usuarioId, productoId])
+  @@unique([usuarioId, varianteId])
   @@map("items_carrito")
 }
 
@@ -273,17 +324,19 @@ enum MetodoPago {
 }
 
 model ItemPedido {
-  id          Int     @id @default(autoincrement())
-  pedidoId    Int     @map("pedido_id")
-  productoId  Int     @map("producto_id")
-  nombre      String  @db.VarChar(300)
+  id          Int                @id @default(autoincrement())
+  pedidoId    Int                @map("pedido_id")
+  productoId  Int                @map("producto_id")
+  varianteId  Int                @map("variante_id")
+  nombre      String             @db.VarChar(300)
   cantidad    Int
-  precioUnit  Decimal @db.Decimal(10, 2) @map("precio_unit")
-  subtotal    Decimal @db.Decimal(10, 2)
-  imagen      String? @db.VarChar(500)
+  precioUnit  Decimal            @db.Decimal(10, 2) @map("precio_unit")
+  subtotal    Decimal            @db.Decimal(10, 2)
+  imagen      String?            @db.VarChar(500)
 
-  pedido      Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
-  producto    Producto @relation(fields: [productoId], references: [id])
+  pedido      Pedido             @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  producto    Producto           @relation(fields: [productoId], references: [id])
+  variante    VarianteProducto   @relation(fields: [varianteId], references: [id])
 
   @@map("items_pedido")
 }
@@ -373,32 +426,36 @@ enum EstadoOrdenCompra {
 }
 
 model ItemOrdenCompra {
-  id              Int     @id @default(autoincrement())
-  ordenCompraId   Int     @map("orden_compra_id")
-  productoId      Int     @map("producto_id")
-  cantidadPedida  Int     @map("cantidad_pedida")
-  cantidadRecibida Int    @default(0) @map("cantidad_recibida")
-  precioUnit      Decimal @db.Decimal(10, 2) @map("precio_unit")
-  subtotal        Decimal @db.Decimal(10, 2)
+  id              Int                @id @default(autoincrement())
+  ordenCompraId   Int                @map("orden_compra_id")
+  productoId      Int                @map("producto_id")
+  varianteId      Int                @map("variante_id")
+  cantidadPedida  Int                @map("cantidad_pedida")
+  cantidadRecibida Int               @default(0) @map("cantidad_recibida")
+  precioUnit      Decimal            @db.Decimal(10, 2) @map("precio_unit")
+  subtotal        Decimal            @db.Decimal(10, 2)
 
-  ordenCompra     OrdenCompra @relation(fields: [ordenCompraId], references: [id], onDelete: Cascade)
-  producto        Producto    @relation(fields: [productoId], references: [id])
+  ordenCompra     OrdenCompra        @relation(fields: [ordenCompraId], references: [id], onDelete: Cascade)
+  producto        Producto           @relation(fields: [productoId], references: [id])
+  variante        VarianteProducto   @relation(fields: [varianteId], references: [id])
 
   @@map("items_orden_compra")
 }
 
 model MovimientoInventario {
-  id          Int      @id @default(autoincrement())
-  productoId  Int      @map("producto_id")
-  tipo        TipoMovimiento
-  cantidad    Int
-  stockAnterior Int     @map("stock_anterior")
-  stockNuevo  Int     @map("stock_nuevo")
-  motivo      String   @db.VarChar(300)
-  referencia  String?  @db.VarChar(100)
-  creadoEn    DateTime @default(now()) @map("creado_en")
+  id                Int                @id @default(autoincrement())
+  productoId        Int                @map("producto_id")
+  varianteId        Int                @map("variante_id")
+  tipo              TipoMovimiento
+  cantidad          Int
+  stockAnterior     Int                @map("stock_anterior")
+  stockNuevo        Int                @map("stock_nuevo")
+  motivo            String             @db.VarChar(300)
+  referencia        String?            @db.VarChar(100)
+  creadoEn          DateTime           @default(now()) @map("creado_en")
 
-  producto    Producto @relation(fields: [productoId], references: [id])
+  producto          Producto           @relation(fields: [productoId], references: [id])
+  variante          VarianteProducto   @relation(fields: [varianteId], references: [id])
 
   @@map("movimientos_inventario")
 }

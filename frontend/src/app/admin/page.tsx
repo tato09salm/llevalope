@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-  LayoutDashboard, Package, Tag, Users, ShoppingBag,
+  LayoutDashboard, Package, Tag, Palette, Ruler, Users, ShoppingBag,
   BarChart3, Truck, MessageSquare, Settings, LogOut,
   TrendingUp, AlertTriangle, ShoppingCart, Star,
   Menu, X, ChevronRight,
@@ -16,6 +16,8 @@ const menuItems = [
   { icono: LayoutDashboard, label: 'Dashboard', ruta: '/admin', color: 'text-teal' },
   { icono: Package, label: 'Productos', ruta: '/admin/productos', color: 'text-blue-500' },
   { icono: Tag, label: 'Categorías', ruta: '/admin/categorias', color: 'text-purple-500' },
+  { icono: Palette, label: 'Colores', ruta: '/admin/colores', color: 'text-pink-500' },
+  { icono: Ruler, label: 'Tallas', ruta: '/admin/tallas', color: 'text-cyan-500' },
   { icono: Users, label: 'Clientes', ruta: '/admin/clientes', color: 'text-green-500' },
   { icono: ShoppingBag, label: 'Pedidos', ruta: '/admin/pedidos', color: 'text-orange-500' },
   { icono: Truck, label: 'Proveedores', ruta: '/admin/proveedores', color: 'text-teal' },

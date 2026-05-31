@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import { Producto } from '../types';
+import { Producto, VarianteProducto } from '../types';
 
 interface ItemCarritoLocal {
   producto: Producto;
+  variante: VarianteProducto;
   cantidad: number;
 }
 
@@ -11,9 +12,9 @@ interface CarritoState {
   items: ItemCarritoLocal[];
   totalItems: number;
   subtotal: number;
-  agregar: (producto: Producto, cantidad?: number) => void;
-  quitar: (productoId: number) => void;
-  actualizarCantidad: (productoId: number, cantidad: number) => void;
+  agregar: (producto: Producto, variante: VarianteProducto, cantidad?: number) => void;
+  quitar: (varianteId: number) => void;
+  actualizarCantidad: (varianteId: number, cantidad: number) => void;
   vaciar: () => void;
   calcularTotales: () => void;
 }
@@ -25,38 +26,38 @@ export const useCarritoStore = create<CarritoState>()(
       totalItems: 0,
       subtotal: 0,
 
-      agregar: (producto, cantidad = 1) => {
+      agregar: (producto, variante, cantidad = 1) => {
         const { items } = get();
-        const existe = items.find((i) => i.producto.id === producto.id);
+        const existe = items.find((i) => i.variante.id === variante.id);
 
         let nuevosItems;
         if (existe) {
           nuevosItems = items.map((i) =>
-            i.producto.id === producto.id
+            i.variante.id === variante.id
               ? { ...i, cantidad: i.cantidad + cantidad }
               : i,
           );
         } else {
-          nuevosItems = [...items, { producto, cantidad }];
+          nuevosItems = [...items, { producto, variante, cantidad }];
         }
 
         set({ items: nuevosItems });
         get().calcularTotales();
       },
 
-      quitar: (productoId) => {
-        const nuevosItems = get().items.filter((i) => i.producto.id !== productoId);
+      quitar: (varianteId) => {
+        const nuevosItems = get().items.filter((i) => i.variante.id !== varianteId);
         set({ items: nuevosItems });
         get().calcularTotales();
       },
 
-      actualizarCantidad: (productoId, cantidad) => {
+      actualizarCantidad: (varianteId, cantidad) => {
         if (cantidad <= 0) {
-          get().quitar(productoId);
+          get().quitar(varianteId);
           return;
         }
         const nuevosItems = get().items.map((i) =>
-          i.producto.id === productoId ? { ...i, cantidad } : i,
+          i.variante.id === varianteId ? { ...i, cantidad } : i,
         );
         set({ items: nuevosItems });
         get().calcularTotales();
@@ -68,7 +69,12 @@ export const useCarritoStore = create<CarritoState>()(
         const { items } = get();
         const totalItems = items.reduce((sum, i) => sum + i.cantidad, 0);
         const subtotal = items.reduce(
-          (sum, i) => sum + Number(i.producto.precio) * i.cantidad,
+          (sum, i) => {
+            const precio = i.variante.enOferta && i.variante.precioOferta 
+              ? i.variante.precioOferta 
+              : i.variante.precioBase;
+            return sum + Number(precio) * i.cantidad;
+          },
           0,
         );
         set({ totalItems, subtotal });

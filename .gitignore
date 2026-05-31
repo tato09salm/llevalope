@@ -3,14 +3,19 @@ node_modules/
 /.pnp
 .pnp.js
 
+# Frontend Next.js
+frontend/.next/
+frontend/out/
+
+# Backend Nest.js
+backend/dist/
+backend/.next/
+
 # Testing
 /coverage
 
 # Production
 /build
-/dist
-.next/
-out/
 
 # Misc
 .DS_Store
@@ -27,6 +32,7 @@ yarn-error.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env*
 
 # IDE
 .vscode/
@@ -38,3 +44,8 @@ yarn-error.log*
 # OS
 Thumbs.db
 .DS_Store
+
+# Prisma
+backend/prisma/migrations/
+backend/prisma/dev.db
+backend/prisma/dev.db-journal

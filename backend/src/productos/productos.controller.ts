@@ -16,23 +16,32 @@ export class ProductosController {
     @Query('pagina') pagina?: number,
     @Query('limite') limite?: number,
     @Query('busqueda') busqueda?: string,
-    @Query('categoria') categoriaId?: number,
+    @Query('categoriaId') categoriaId?: number,
+    @Query('categoria') categoria?: string,
     @Query('enOferta') enOferta?: boolean,
     @Query('destacado') destacado?: boolean,
-    @Query('precioMin') precioMin?: number,
-    @Query('precioMax') precioMax?: number,
+    @Query('precioMin') precioMin?: string | number,
+    @Query('precioMax') precioMax?: string | number,
     @Query('ordenar') ordenar?: string,
     @Query('todos') todos?: boolean,
   ) {
+    // Properly parse precioMin and precioMax - handle string "0"
+    const parsePrecio = (valor: any) => {
+      if (valor === undefined || valor === null || valor === '') return undefined;
+      const num = Number(valor);
+      return isNaN(num) ? undefined : num;
+    };
+    
     return this.productosService.listar({
       pagina: pagina ? +pagina : 1,
       limite: limite ? +limite : 20,
       busqueda,
       categoriaId: categoriaId ? +categoriaId : undefined,
+      categoria,
       enOferta: enOferta !== undefined ? enOferta === true || (enOferta as any) === 'true' : undefined,
       destacado: destacado !== undefined ? destacado === true || (destacado as any) === 'true' : undefined,
-      precioMin: precioMin ? +precioMin : undefined,
-      precioMax: precioMax ? +precioMax : undefined,
+      precioMin: parsePrecio(precioMin),
+      precioMax: parsePrecio(precioMax),
       ordenar,
       todos: todos !== undefined ? todos === true || (todos as any) === 'true' : undefined,
     });
@@ -48,7 +57,14 @@ export class ProductosController {
     return this.productosService.obtenerOfertas();
   }
 
-  @Get(':slug')
+  @Get(':id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'GERENTE', 'OPERADOR')
+  obtenerPorId(@Param('id', ParseIntPipe) id: number) {
+    return this.productosService.obtenerPorId(id);
+  }
+
+  @Get('slug/:slug')
   obtenerPorSlug(@Param('slug') slug: string) {
     return this.productosService.obtenerPorSlug(slug);
   }
@@ -65,6 +81,13 @@ export class ProductosController {
   @Put(':id')
   actualizar(@Param('id', ParseIntPipe) id: number, @Body() datos: any) {
     return this.productosService.actualizar(id, datos);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'GERENTE', 'OPERADOR')
+  @Patch(':id/toggle-activo')
+  toggleActivo(@Param('id', ParseIntPipe) id: number) {
+    return this.productosService.toggleActive(id);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

@@ -6,6 +6,9 @@ import { AuthModule } from './auth/auth.module';
 import { UsuariosModule } from './usuarios/usuarios.module';
 import { ProductosModule } from './productos/productos.module';
 import { CategoriasModule } from './categorias/categorias.module';
+import { ColoresModule } from './colores/colores.module';
+import { SizeCollectionsModule } from './tallas-colecciones/tallas-colecciones.module';
+import { SizesModule } from './tallas/tallas.module';
 import { PedidosModule } from './pedidos/pedidos.module';
 import { ProveedoresModule } from './proveedores/proveedores.module';
 import { InventarioModule } from './inventario/inventario.module';
@@ -29,6 +32,9 @@ import { ReportesModule } from './reportes/reportes.module';
     UsuariosModule,
     ProductosModule,
     CategoriasModule,
+    ColoresModule,
+    SizeCollectionsModule,
+    SizesModule,
     PedidosModule,
     ProveedoresModule,
     InventarioModule,
