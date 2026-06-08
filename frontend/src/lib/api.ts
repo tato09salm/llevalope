@@ -36,106 +36,112 @@ api.interceptors.response.use(
 // SERVICIOS API
 // ========================
 
+const get = async (url: string, config?: any): Promise<any> => api.get(url, config);
+const post = async (url: string, data?: any, config?: any): Promise<any> => api.post(url, data, config);
+const put = async (url: string, data?: any, config?: any): Promise<any> => api.put(url, data, config);
+const patch = async (url: string, data?: any, config?: any): Promise<any> => api.patch(url, data, config);
+const del = async (url: string, config?: any): Promise<any> => api.delete(url, config);
+
 export const authAPI = {
-  registrar: (datos: any) => api.post('/auth/registrar', datos),
-  iniciarSesion: (datos: any) => api.post('/auth/iniciar-sesion', datos),
-  perfil: () => api.get('/auth/perfil'),
+  registrar: (datos: any) => post('/auth/registrar', datos),
+  iniciarSesion: (datos: any) => post('/auth/iniciar-sesion', datos),
+  perfil: () => get('/auth/perfil'),
 };
 
 export const productosAPI = {
-  listar: (params?: any) => api.get('/productos', { params }),
-  obtener: (slug: string) => api.get(`/productos/slug/${slug}`),
-  obtenerPorId: (id: number) => api.get(`/productos/${id}`),
-  destacados: () => api.get('/productos/destacados'),
-  ofertas: () => api.get('/productos/ofertas'),
-  crear: (datos: any) => api.post('/productos', datos),
-  actualizar: (id: number, datos: any) => api.put(`/productos/${id}`, datos),
-  toggleActivo: (id: number) => api.patch(`/productos/${id}/toggle-activo`),
-  eliminar: (id: number) => api.delete(`/productos/${id}`),
+  listar: (params?: any) => get('/productos', { params }),
+  obtener: (slug: string) => get(`/productos/slug/${slug}`),
+  obtenerPorId: (id: number) => get(`/productos/${id}`),
+  destacados: () => get('/productos/destacados'),
+  ofertas: () => get('/productos/ofertas'),
+  crear: (datos: any) => post('/productos', datos),
+  actualizar: (id: number, datos: any) => put(`/productos/${id}`, datos),
+  toggleActivo: (id: number) => patch(`/productos/${id}/toggle-activo`),
+  eliminar: (id: number) => del(`/productos/${id}`),
 };
 
 export const categoriasAPI = {
-  listar: (params?: any) => api.get('/categorias', { params }),
-  listarPadres: (params?: any) => api.get('/categorias/padres', { params }),
-  obtener: (id: number) => api.get(`/categorias/${id}`),
-  crear: (datos: any) => api.post('/categorias', datos),
-  actualizar: (id: number, datos: any) => api.put(`/categorias/${id}`, datos),
-  toggleActiva: (id: number) => api.patch(`/categorias/${id}/toggle-activa`),
-  eliminar: (id: number) => api.delete(`/categorias/${id}`),
+  listar: (params?: any) => get('/categorias', { params }),
+  listarPadres: (params?: any) => get('/categorias/padres', { params }),
+  obtener: (id: number) => get(`/categorias/${id}`),
+  crear: (datos: any) => post('/categorias', datos),
+  actualizar: (id: number, datos: any) => put(`/categorias/${id}`, datos),
+  toggleActiva: (id: number) => patch(`/categorias/${id}/toggle-activa`),
+  eliminar: (id: number) => del(`/categorias/${id}`),
 };
 
 export const coloresAPI = {
-  listar: (params?: any) => api.get('/colores', { params }),
-  obtener: (id: number) => api.get(`/colores/${id}`),
-  crear: (datos: any) => api.post('/colores', datos),
-  actualizar: (id: number, datos: any) => api.put(`/colores/${id}`, datos),
-  toggleActiva: (id: number) => api.patch(`/colores/${id}/toggle-activa`),
-  eliminar: (id: number) => api.delete(`/colores/${id}`),
+  listar: (params?: any) => get('/colores', { params }),
+  obtener: (id: number) => get(`/colores/${id}`),
+  crear: (datos: any) => post('/colores', datos),
+  actualizar: (id: number, datos: any) => put(`/colores/${id}`, datos),
+  toggleActiva: (id: number) => patch(`/colores/${id}/toggle-activa`),
+  eliminar: (id: number) => del(`/colores/${id}`),
 };
 
 export const sizeCollectionsAPI = {
-  listar: (params?: any) => api.get('/tallas-colecciones', { params }),
-  obtener: (id: number) => api.get(`/tallas-colecciones/${id}`),
-  crear: (datos: any) => api.post('/tallas-colecciones', datos),
-  actualizar: (id: number, datos: any) => api.put(`/tallas-colecciones/${id}`, datos),
-  toggleActiva: (id: number) => api.patch(`/tallas-colecciones/${id}/toggle-activa`),
-  eliminar: (id: number) => api.delete(`/tallas-colecciones/${id}`),
+  listar: (params?: any) => get('/tallas-colecciones', { params }),
+  obtener: (id: number) => get(`/tallas-colecciones/${id}`),
+  crear: (datos: any) => post('/tallas-colecciones', datos),
+  actualizar: (id: number, datos: any) => put(`/tallas-colecciones/${id}`, datos),
+  toggleActiva: (id: number) => patch(`/tallas-colecciones/${id}/toggle-activa`),
+  eliminar: (id: number) => del(`/tallas-colecciones/${id}`),
 };
 
 export const sizesAPI = {
-  listar: (params?: any) => api.get('/tallas', { params }),
-  obtener: (id: number) => api.get(`/tallas/${id}`),
-  crear: (datos: any) => api.post('/tallas', datos),
-  actualizar: (id: number, datos: any) => api.put(`/tallas/${id}`, datos),
-  toggleActiva: (id: number) => api.patch(`/tallas/${id}/toggle-activa`),
-  eliminar: (id: number) => api.delete(`/tallas/${id}`),
+  listar: (params?: any) => get('/tallas', { params }),
+  obtener: (id: number) => get(`/tallas/${id}`),
+  crear: (datos: any) => post('/tallas', datos),
+  actualizar: (id: number, datos: any) => put(`/tallas/${id}`, datos),
+  toggleActiva: (id: number) => patch(`/tallas/${id}/toggle-activa`),
+  eliminar: (id: number) => del(`/tallas/${id}`),
 };
 
 export const pedidosAPI = {
-  crear: (datos: any) => api.post('/pedidos', datos),
-  listarMios: () => api.get('/pedidos/mis-pedidos'),
-  obtener: (id: number) => api.get(`/pedidos/${id}`),
-  listarAdmin: (params?: any) => api.get('/pedidos/admin', { params }),
-  actualizarEstado: (id: number, datos: any) => api.patch(`/pedidos/${id}/estado`, datos),
+  crear: (datos: any) => post('/pedidos', datos),
+  listarMios: () => get('/pedidos/mis-pedidos'),
+  obtener: (id: number) => get(`/pedidos/${id}`),
+  listarAdmin: (params?: any) => get('/pedidos/admin', { params }),
+  actualizarEstado: (id: number, datos: any) => patch(`/pedidos/${id}/estado`, datos),
 };
 
 export const usuariosAPI = {
-  listar: () => api.get('/usuarios'),
-  actualizarPerfil: (datos: any) => api.patch('/usuarios/perfil', datos),
-  obtenerCarrito: () => api.get('/usuarios/carrito'),
+  listar: () => get('/usuarios'),
+  actualizarPerfil: (datos: any) => patch('/usuarios/perfil', datos),
+  obtenerCarrito: () => get('/usuarios/carrito'),
   agregarCarrito: (productoId: number, varianteId: number, cantidad = 1) =>
-    api.patch('/usuarios/carrito', { productoId, varianteId, cantidad }),
-  listarDirecciones: () => api.get('/usuarios/direcciones'),
+    patch('/usuarios/carrito', { productoId, varianteId, cantidad }),
+  listarDirecciones: () => get('/usuarios/direcciones'),
 };
 
 export const proveedoresAPI = {
-  listar: () => api.get('/proveedores'),
-  crear: (datos: any) => api.post('/proveedores', datos),
-  listarOrdenes: () => api.get('/proveedores/ordenes'),
-  crearOrden: (datos: any) => api.post('/proveedores/ordenes', datos),
+  listar: () => get('/proveedores'),
+  crear: (datos: any) => post('/proveedores', datos),
+  listarOrdenes: () => get('/proveedores/ordenes'),
+  crearOrden: (datos: any) => post('/proveedores/ordenes', datos),
 };
 
 export const inventarioAPI = {
-  stockBajo: () => api.get('/inventario/stock-bajo'),
+  stockBajo: () => get('/inventario/stock-bajo'),
   movimientos: (productoId?: number) =>
-    api.get('/inventario/movimientos', { params: { productoId } }),
-  ajustar: (datos: any) => api.post('/inventario/ajustar', datos),
+    get('/inventario/movimientos', { params: { productoId } }),
+  ajustar: (datos: any) => post('/inventario/ajustar', datos),
 };
 
 export const soporteAPI = {
-  crearTicket: (datos: any) => api.post('/soporte/tickets', datos),
-  misTickets: () => api.get('/soporte/mis-tickets'),
-  listarAdmin: () => api.get('/soporte/admin/tickets'),
+  crearTicket: (datos: any) => post('/soporte/tickets', datos),
+  misTickets: () => get('/soporte/mis-tickets'),
+  listarAdmin: () => get('/soporte/admin/tickets'),
   responder: (id: number, mensaje: string) =>
-    api.post(`/soporte/tickets/${id}/responder`, { mensaje }),
+    post(`/soporte/tickets/${id}/responder`, { mensaje }),
   actualizarEstado: (id: number, estado: string) =>
-    api.patch(`/soporte/tickets/${id}/estado`, { estado }),
+    patch(`/soporte/tickets/${id}/estado`, { estado }),
 };
 
 export const reportesAPI = {
-  dashboard: () => api.get('/reportes/dashboard'),
-  ventasPorDia: () => api.get('/reportes/ventas-por-dia'),
-  masVendidos: () => api.get('/reportes/productos-mas-vendidos'),
+  dashboard: () => get('/reportes/dashboard'),
+  ventasPorDia: () => get('/reportes/ventas-por-dia'),
+  masVendidos: () => get('/reportes/productos-mas-vendidos'),
 };
 
 export default api;

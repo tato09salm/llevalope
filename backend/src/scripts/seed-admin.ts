@@ -7,22 +7,12 @@ async function main() {
   const correo = 'admin@llevalope.pe';
   const contrasena = 'Admin123!';
 
-  // Verificar si el usuario ya existe
-  const existe = await prisma.usuario.findUnique({
-    where: { correo },
-  });
-
-  if (existe) {
-    console.log('✅ El usuario admin ya existe:', correo);
-    return;
-  }
-
   // Hash de la contraseña
   const hash = await bcrypt.hash(contrasena, 10);
 
-  // Crear el usuario
-  const usuario = await prisma.usuario.create({
-    data: {
+  const usuario = await prisma.usuario.upsert({
+    where: { correo },
+    create: {
       nombre: 'Admin',
       apellido: 'Administrador',
       correo,
@@ -31,9 +21,15 @@ async function main() {
       verificado: true,
       activo: true,
     },
+    update: {
+      contrasena: hash,
+      rol: 'ADMIN',
+      verificado: true,
+      activo: true,
+    },
   });
 
-  console.log('✅ Usuario admin creado con éxito!');
+  console.log('✅ Usuario admin listo (creado/actualizado)!');
   console.log('📧 Correo:', correo);
   console.log('🔐 Contraseña:', contrasena);
   console.log('👤 Rol:', usuario.rol);

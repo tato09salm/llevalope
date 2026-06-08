@@ -8,14 +8,17 @@ import { jsPDF } from 'jspdf';
 import { categoriasAPI } from '../../../lib/api';
 import { Categoria } from '../../../types';
 import toast from 'react-hot-toast';
+import { useAuthStore } from '../../../store/auth.store';
 
 export default function AdminCategoriasPage() {
+  const { usuario } = useAuthStore();
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [filtroEstado, setFiltroEstado] = useState<'todos' | 'activas' | 'inactivas'>('todos');
   const [expandidas, setExpandidas] = useState<Set<number>>(new Set());
   const [modalEliminar, setModalEliminar] = useState<{ id: number; nombre: string } | null>(null);
+  const puedeEliminar = usuario?.rol === 'ADMIN' || usuario?.rol === 'GERENTE';
 
   const generarPDF = () => {
     const doc = new jsPDF();
@@ -208,9 +211,11 @@ export default function AdminCategoriasPage() {
               <Link href={`/admin/categorias/${categoria.id}`} className="p-1.5 text-gris-elegante hover:text-azul-corp transition-colors" title="Editar">
                 <Edit2 size={16} />
               </Link>
-              <button onClick={() => setModalEliminar({ id: categoria.id, nombre: categoria.nombre })} className="p-1.5 text-gris-elegante hover:text-red-500 transition-colors" title="Eliminar">
-                <Trash2 size={16} />
-              </button>
+              {puedeEliminar && (
+                <button onClick={() => setModalEliminar({ id: categoria.id, nombre: categoria.nombre })} className="p-1.5 text-gris-elegante hover:text-red-500 transition-colors" title="Eliminar">
+                  <Trash2 size={16} />
+                </button>
+              )}
             </div>
           </td>
         </motion.tr>

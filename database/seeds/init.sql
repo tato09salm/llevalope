@@ -3,6 +3,10 @@
 -- PostgreSQL
 -- =============================================
 
+-- Reiniciar el esquema para poder re-ejecutar este script sin errores
+DROP SCHEMA IF EXISTS public CASCADE;
+CREATE SCHEMA public;
+
 -- Crear tipos ENUM
 CREATE TYPE rol_usuario AS ENUM ('ADMIN', 'GERENTE', 'OPERADOR', 'CLIENTE', 'PROVEEDOR');
 CREATE TYPE estado_pedido AS ENUM ('PENDIENTE', 'CONFIRMADO', 'EN_PREPARACION', 'ENVIADO', 'EN_CAMINO', 'ENTREGADO', 'CANCELADO', 'DEVUELTO');
@@ -82,6 +86,43 @@ CREATE TABLE marcas (
 );
 
 -- ========================
+-- TABLA: colores
+-- ========================
+CREATE TABLE colores (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    hex VARCHAR(7) UNIQUE NOT NULL,
+    activo BOOLEAN DEFAULT true,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================
+-- TABLA: tallas_colecciones
+-- ========================
+CREATE TABLE tallas_colecciones (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(100) UNIQUE NOT NULL,
+    orden INTEGER DEFAULT 0,
+    activo BOOLEAN DEFAULT true,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================
+-- TABLA: tallas
+-- ========================
+CREATE TABLE tallas (
+    id SERIAL PRIMARY KEY,
+    nombre VARCHAR(50) NOT NULL,
+    orden INTEGER DEFAULT 0,
+    activo BOOLEAN DEFAULT true,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    coleccion_id INTEGER REFERENCES tallas_colecciones(id)
+);
+
+-- ========================
 -- TABLA: productos
 -- ========================
 CREATE TABLE productos (
@@ -90,19 +131,12 @@ CREATE TABLE productos (
     slug VARCHAR(300) UNIQUE NOT NULL,
     descripcion TEXT,
     descripcion_corta VARCHAR(500),
-    sku VARCHAR(100) UNIQUE NOT NULL,
-    precio DECIMAL(10,2) NOT NULL,
-    precio_anterior DECIMAL(10,2),
-    porcentaje_descuento INTEGER DEFAULT 0,
     categoria_id INTEGER NOT NULL REFERENCES categorias(id),
     marca_id INTEGER REFERENCES marcas(id),
-    stock INTEGER DEFAULT 0,
-    stock_minimo INTEGER DEFAULT 5,
     peso DECIMAL(8,3),
     dimensiones JSONB,
     activo BOOLEAN DEFAULT true,
     destacado BOOLEAN DEFAULT false,
-    en_oferta BOOLEAN DEFAULT false,
     calificacion DECIMAL(3,2) DEFAULT 0,
     total_resenas INTEGER DEFAULT 0,
     total_ventas INTEGER DEFAULT 0,
@@ -112,28 +146,36 @@ CREATE TABLE productos (
 );
 
 -- ========================
--- TABLA: imagenes_producto
--- ========================
-CREATE TABLE imagenes_producto (
-    id SERIAL PRIMARY KEY,
-    producto_id INTEGER NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
-    url VARCHAR(500) NOT NULL,
-    alt VARCHAR(200),
-    orden INTEGER DEFAULT 0,
-    principal BOOLEAN DEFAULT false
-);
-
--- ========================
 -- TABLA: variantes_producto
 -- ========================
 CREATE TABLE variantes_producto (
     id SERIAL PRIMARY KEY,
     producto_id INTEGER NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
-    nombre VARCHAR(100) NOT NULL,
-    valor VARCHAR(100) NOT NULL,
-    precio DECIMAL(10,2),
+    color_id INTEGER REFERENCES colores(id),
+    size_id INTEGER REFERENCES tallas(id),
+    sku VARCHAR(100) UNIQUE NOT NULL,
+    precio_base DECIMAL(10,2) NOT NULL,
+    precio_oferta DECIMAL(10,2),
+    porcentaje_descuento INTEGER DEFAULT 0,
     stock INTEGER DEFAULT 0,
-    sku VARCHAR(100)
+    stock_minimo INTEGER DEFAULT 5,
+    en_oferta BOOLEAN DEFAULT false,
+    activo BOOLEAN DEFAULT true,
+    es_principal BOOLEAN DEFAULT false,
+    orden INTEGER DEFAULT 0
+);
+
+-- ========================
+-- TABLA: imagenes_producto
+-- ========================
+CREATE TABLE imagenes_producto (
+    id SERIAL PRIMARY KEY,
+    producto_id INTEGER NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
+    variante_id INTEGER REFERENCES variantes_producto(id),
+    url TEXT NOT NULL,
+    alt VARCHAR(200),
+    orden INTEGER DEFAULT 0,
+    principal BOOLEAN DEFAULT false
 );
 
 -- ========================
@@ -143,9 +185,10 @@ CREATE TABLE items_carrito (
     id SERIAL PRIMARY KEY,
     usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
     producto_id INTEGER NOT NULL REFERENCES productos(id) ON DELETE CASCADE,
+    variante_id INTEGER NOT NULL REFERENCES variantes_producto(id) ON DELETE CASCADE,
     cantidad INTEGER DEFAULT 1,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE(usuario_id, producto_id)
+    UNIQUE(usuario_id, variante_id)
 );
 
 -- ========================
@@ -190,6 +233,7 @@ CREATE TABLE items_pedido (
     id SERIAL PRIMARY KEY,
     pedido_id INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
     producto_id INTEGER NOT NULL REFERENCES productos(id),
+    variante_id INTEGER NOT NULL REFERENCES variantes_producto(id),
     nombre VARCHAR(300) NOT NULL,
     cantidad INTEGER NOT NULL,
     precio_unit DECIMAL(10,2) NOT NULL,
@@ -267,6 +311,7 @@ CREATE TABLE items_orden_compra (
     id SERIAL PRIMARY KEY,
     orden_compra_id INTEGER NOT NULL REFERENCES ordenes_compra(id) ON DELETE CASCADE,
     producto_id INTEGER NOT NULL REFERENCES productos(id),
+    variante_id INTEGER NOT NULL REFERENCES variantes_producto(id),
     cantidad_pedida INTEGER NOT NULL,
     cantidad_recibida INTEGER DEFAULT 0,
     precio_unit DECIMAL(10,2) NOT NULL,
@@ -279,6 +324,7 @@ CREATE TABLE items_orden_compra (
 CREATE TABLE movimientos_inventario (
     id SERIAL PRIMARY KEY,
     producto_id INTEGER NOT NULL REFERENCES productos(id),
+    variante_id INTEGER NOT NULL REFERENCES variantes_producto(id),
     tipo tipo_movimiento NOT NULL,
     cantidad INTEGER NOT NULL,
     stock_anterior INTEGER NOT NULL,
@@ -382,6 +428,9 @@ CREATE INDEX idx_productos_categoria ON productos(categoria_id);
 CREATE INDEX idx_productos_slug ON productos(slug);
 CREATE INDEX idx_productos_activo ON productos(activo);
 CREATE INDEX idx_productos_destacado ON productos(destacado);
+CREATE INDEX idx_variantes_producto_producto ON variantes_producto(producto_id);
+CREATE INDEX idx_variantes_producto_activo ON variantes_producto(activo);
+CREATE INDEX idx_variantes_producto_en_oferta ON variantes_producto(en_oferta);
 CREATE INDEX idx_pedidos_usuario ON pedidos(usuario_id);
 CREATE INDEX idx_pedidos_estado ON pedidos(estado);
 CREATE INDEX idx_items_carrito_usuario ON items_carrito(usuario_id);
@@ -393,9 +442,9 @@ CREATE INDEX idx_notificaciones_usuario ON notificaciones(usuario_id, leida);
 
 -- Usuario Administrador (contraseña: Admin123!)
 INSERT INTO usuarios (nombre, apellido, correo, contrasena, rol, verificado) VALUES
-('Admin', 'LlevaloPe', 'admin@llevalope.pe', '$2b$10$EIXJSrDiJpCiimkMJrz7MuXXv3CUuKzAy.6W.A8c8hL6C4HovJfuy', 'ADMIN', true),
-('María', 'González', 'maria@ejemplo.com', '$2b$10$EIXJSrDiJpCiimkMJrz7MuXXv3CUuKzAy.6W.A8c8hL6C4HovJfuy', 'CLIENTE', true),
-('Carlos', 'Quispe', 'carlos@ejemplo.com', '$2b$10$EIXJSrDiJpCiimkMJrz7MuXXv3CUuKzAy.6W.A8c8hL6C4HovJfuy', 'CLIENTE', true);
+('Admin', 'LlevaloPe', 'admin@llevalope.pe', '$2b$10$QgnHUBHCP/9aOSNeXyOdaeSk4gK26v5EAO7pZ0QtI0JICBJJEb9SO', 'ADMIN', true),
+('María', 'González', 'maria@ejemplo.com', '$2b$10$QgnHUBHCP/9aOSNeXyOdaeSk4gK26v5EAO7pZ0QtI0JICBJJEb9SO', 'CLIENTE', true),
+('Carlos', 'Quispe', 'carlos@ejemplo.com', '$2b$10$QgnHUBHCP/9aOSNeXyOdaeSk4gK26v5EAO7pZ0QtI0JICBJJEb9SO', 'CLIENTE', true);
 
 -- Categorías principales
 INSERT INTO categorias (nombre, slug, descripcion, icono, orden) VALUES
@@ -420,16 +469,54 @@ INSERT INTO marcas (nombre, slug) VALUES
 ('Adidas', 'adidas'),
 ('Marca Propia', 'marca-propia');
 
+-- Colores
+INSERT INTO colores (nombre, hex, activo) VALUES
+('Negro', '#000000', true),
+('Blanco', '#FFFFFF', true);
+
+-- Tallas
+INSERT INTO tallas_colecciones (nombre, orden, activo) VALUES
+('Unico', 1, true);
+
+INSERT INTO tallas (nombre, orden, activo, coleccion_id) VALUES
+('Talla Única', 1, true, 1);
+
 -- Productos de ejemplo
-INSERT INTO productos (nombre, slug, descripcion_corta, sku, precio, precio_anterior, porcentaje_descuento, categoria_id, marca_id, stock, destacado, en_oferta, calificacion, total_resenas, imagen_principal) VALUES
-('Audífonos Inalámbricos Sony WH-1000XM5', 'audifonos-sony-wh1000xm5', 'Cancelación de ruido líder en la industria', 'SON-AUD-001', 1299.90, 1599.90, 19, 1, 3, 45, true, true, 4.8, 128, '/imagenes/productos/audifonos-sony.jpg'),
-('Smartwatch Pro Series 8', 'smartwatch-pro-series-8', 'Monitor de salud avanzado y GPS', 'SMP-WAT-001', 899.90, 1099.90, 18, 1, 1, 32, true, false, 4.6, 96, '/imagenes/productos/smartwatch.jpg'),
-('Mochila Urbana Premium', 'mochila-urbana-premium', 'Resistente al agua, compartimento laptop 15"', 'MOC-URB-001', 299.90, 399.90, 25, 3, 9, 78, false, true, 4.5, 74, '/imagenes/productos/mochila.jpg'),
-('Perfume Elegance Pour Femme', 'perfume-elegance-pour-femme', '50ml - Fragancia floral y fresca', 'PER-ELE-001', 399.90, 499.90, 20, 4, 9, 55, true, false, 4.7, 53, '/imagenes/productos/perfume.jpg'),
-('Laptop Lenovo IdeaPad 5i', 'laptop-lenovo-ideapad-5i', 'Intel Core i7, 16GB RAM, 512GB SSD', 'LEN-LAP-001', 3299.90, 3999.90, 18, 1, 4, 20, true, true, 4.7, 62, '/imagenes/productos/laptop.jpg'),
-('Smart TV LG 55" 4K OLED', 'smart-tv-lg-55-4k-oled', 'Resolución 4K, HDR Dolby Vision, WebOS', 'LGT-TV-001', 4599.90, 5499.90, 16, 1, 6, 15, true, true, 4.9, 41, '/imagenes/productos/tv.jpg'),
-('Zapatillas Nike Air Max 270', 'zapatillas-nike-air-max-270', 'Comodidad extrema para el día a día', 'NIK-ZAP-001', 469.90, 599.90, 22, 5, 7, 120, false, true, 4.5, 89, '/imagenes/productos/zapatillas.jpg'),
-('Cafetera Espresso DeLonghi', 'cafetera-espresso-delonghi', 'Presión 15 bar, espumador de leche', 'CAF-DEL-001', 899.90, 1099.90, 18, 2, 9, 28, false, false, 4.6, 37, '/imagenes/productos/cafetera.jpg');
+INSERT INTO productos (nombre, slug, descripcion_corta, categoria_id, marca_id, activo, destacado, calificacion, total_resenas, total_ventas, imagen_principal) VALUES
+('Audífonos Inalámbricos Sony WH-1000XM5', 'audifonos-sony-wh1000xm5', 'Cancelación de ruido líder en la industria', 1, 3, true, true, 4.8, 128, 342, 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=1200'),
+('Smartwatch Pro Series 8', 'smartwatch-pro-series-8', 'Monitor de salud avanzado y GPS', 1, 1, true, true, 4.6, 96, 215, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200'),
+('Mochila Urbana Premium', 'mochila-urbana-premium', 'Resistente al agua, compartimento laptop 15\"', 3, 9, true, false, 4.5, 74, 189, 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1200'),
+('Perfume Elegance Pour Femme', 'perfume-elegance-pour-femme', '50ml - Fragancia floral y fresca', 4, 9, true, true, 4.7, 53, 167, 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=1200'),
+('Laptop Lenovo IdeaPad 5i', 'laptop-lenovo-ideapad-5i', 'Intel Core i7, 16GB RAM, 512GB SSD', 1, 4, true, true, 4.7, 62, 120, 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=1200'),
+('Smart TV LG 55\" 4K OLED', 'smart-tv-lg-55-4k-oled', 'Resolución 4K, HDR Dolby Vision, WebOS', 1, 6, true, true, 4.9, 41, 95, 'https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?w=1200'),
+('Zapatillas Nike Air Max 270', 'zapatillas-nike-air-max-270', 'Comodidad extrema para el día a día', 5, 7, true, false, 4.5, 89, 210, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200'),
+('Cafetera Espresso DeLonghi', 'cafetera-espresso-delonghi', 'Presión 15 bar, espumador de leche', 2, 9, true, false, 4.6, 37, 80, 'https://images.unsplash.com/photo-1509460913899-515f1df34fea?w=1200');
+
+-- Variantes (1 por producto para que el catálogo muestre precio y stock)
+INSERT INTO variantes_producto (
+  producto_id, color_id, size_id, sku,
+  precio_base, precio_oferta, porcentaje_descuento,
+  stock, stock_minimo, en_oferta, activo, es_principal, orden
+) VALUES
+(1, 1, 1, 'SON-AUD-001', 1599.90, 1299.90, 19, 45, 5, true, true, true, 0),
+(2, 1, 1, 'SMP-WAT-001', 899.90, NULL, 0, 32, 5, false, true, true, 0),
+(3, 1, 1, 'MOC-URB-001', 399.90, 299.90, 25, 78, 10, true, true, true, 0),
+(4, 1, 1, 'PER-ELE-001', 399.90, NULL, 0, 55, 5, false, true, true, 0),
+(5, 1, 1, 'LEN-LAP-001', 3999.90, 3299.90, 18, 20, 3, true, true, true, 0),
+(6, 1, 1, 'LGT-TV-001', 5499.90, 4599.90, 16, 15, 2, true, true, true, 0),
+(7, 1, 1, 'NIK-ZAP-001', 599.90, 469.90, 22, 120, 10, true, true, true, 0),
+(8, 1, 1, 'CAF-DEL-001', 899.90, NULL, 0, 28, 5, false, true, true, 0);
+
+-- Imágenes (para que el detalle del producto muestre galería)
+INSERT INTO imagenes_producto (producto_id, url, alt, orden, principal) VALUES
+(1, 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=1200', 'Audífonos Inalámbricos Sony WH-1000XM5', 0, true),
+(2, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200', 'Smartwatch Pro Series 8', 0, true),
+(3, 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1200', 'Mochila Urbana Premium', 0, true),
+(4, 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=1200', 'Perfume Elegance Pour Femme', 0, true),
+(5, 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=1200', 'Laptop Lenovo IdeaPad 5i', 0, true),
+(6, 'https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?w=1200', 'Smart TV LG 55\" 4K OLED', 0, true),
+(7, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200', 'Zapatillas Nike Air Max 270', 0, true),
+(8, 'https://images.unsplash.com/photo-1509460913899-515f1df34fea?w=1200', 'Cafetera Espresso DeLonghi', 0, true);
 
 -- Proveedores
 INSERT INTO proveedores (nombre, ruc, contacto, correo, telefono, pais) VALUES

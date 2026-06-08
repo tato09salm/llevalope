@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { ChevronLeft, Save, Ruler, Loader2 } from 'lucide-react';
@@ -9,7 +9,7 @@ import { sizesAPI, sizeCollectionsAPI } from '../../../../lib/api';
 import toast from 'react-hot-toast';
 import { SizeCollection } from '../../../../types';
 
-export default function NuevaTallaPage() {
+function NuevaTallaContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const coleccionId = searchParams.get('coleccionId');
@@ -152,5 +152,13 @@ export default function NuevaTallaPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function NuevaTallaPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-crema flex items-center justify-center"><Loader2 size={40} className="animate-spin text-teal" /></div>}>
+      <NuevaTallaContent />
+    </Suspense>
   );
 }

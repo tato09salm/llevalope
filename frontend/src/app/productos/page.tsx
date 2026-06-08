@@ -111,7 +111,7 @@ function ProductosContent() {
             params.set(k, v.toString());
           }
         }
-      } else if (v && v !== '' && v !== false) {
+      } else if (v && v !== '') {
         params.set(k, v.toString());
       }
     });
