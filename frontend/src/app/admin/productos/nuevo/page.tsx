@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, type ChangeEvent } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -36,6 +36,8 @@ export default function NuevoProductoPage() {
   const [tallas, setTallas] = useState([]);
   const [categoriaPadreId, setCategoriaPadreId] = useState(null);
   const [subcategorias, setSubcategorias] = useState([]);
+  const [tipoImagen, setTipoImagen] = useState<'url' | 'archivo'>('url');
+  const [previewImagen, setPreviewImagen] = useState<string | null>(null);
 
   // Modal para editar imágenes de variante
   const [variantImagesDialog, setVariantImagesDialog] = useState<{
@@ -48,8 +50,9 @@ export default function NuevoProductoPage() {
     slug: '',
     descripcion: '',
     descripcionCorta: '',
-    categoriaId: null,
-    marcaId: null,
+    categoriaId: null as number | null,
+    subcategoriaId: null as number | null,
+    marcaId: null as number | null,
     activo: true,
     destacado: false,
     peso: '' as string | null,
@@ -196,6 +199,24 @@ export default function NuevoProductoPage() {
   const handleNombreChange = (e) => {
     const nombre = e.target.value;
     setForm({ ...form, nombre, slug: generarSlug(nombre) });
+  };
+
+  const handleImagenUrlChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const url = e.target.value;
+    setForm((prev) => ({ ...prev, imagenPrincipal: url }));
+    setPreviewImagen(url || null);
+  };
+
+  const handleImagenArchivoChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const archivo = e.target.files?.[0];
+    if (!archivo) return;
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      setForm((prev) => ({ ...prev, imagenPrincipal: result }));
+      setPreviewImagen(result);
+    };
+    reader.readAsDataURL(archivo);
   };
 
   const agregarVariante = () => {
@@ -425,6 +446,60 @@ export default function NuevoProductoPage() {
                     rows={3}
                     className="input-campo resize-none"
                   />
+                </div>
+                <div className="md:col-span-3">
+                  <label className="label-campo">Imagen Principal</label>
+                  <div className="space-y-3">
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setTipoImagen('url')}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          tipoImagen === 'url'
+                            ? 'bg-teal text-white'
+                            : 'bg-gray-100 text-gris-elegante hover:bg-gray-200'
+                        }`}
+                      >
+                        URL
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTipoImagen('archivo')}
+                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                          tipoImagen === 'archivo'
+                            ? 'bg-teal text-white'
+                            : 'bg-gray-100 text-gris-elegante hover:bg-gray-200'
+                        }`}
+                      >
+                        Subir Archivo
+                      </button>
+                    </div>
+                    {tipoImagen === 'url' ? (
+                      <input
+                        type="text"
+                        value={form.imagenPrincipal}
+                        onChange={handleImagenUrlChange}
+                        placeholder="https://ejemplo.com/imagen.jpg"
+                        className="input-campo"
+                      />
+                    ) : (
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImagenArchivoChange}
+                        className="input-campo"
+                      />
+                    )}
+                    {(form.imagenPrincipal || previewImagen) && (
+                      <div className="mt-3">
+                        <img
+                          src={previewImagen || form.imagenPrincipal || ''}
+                          alt="Preview"
+                          className="w-40 h-40 object-cover rounded-lg border border-gray-200"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

@@ -8,8 +8,10 @@ import { productosAPI } from '../../../lib/api';
 import { Producto } from '../../../types';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../../../components/ui/confirm-dialog';
+import { useAuthStore } from '../../../store/auth.store';
 
 export default function AdminProductosPage() {
+  const { usuario } = useAuthStore();
   const [productos, setProductos] = useState<Producto[]>([]);
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
@@ -92,6 +94,8 @@ export default function AdminProductosPage() {
     if (!producto.variantes || producto.variantes.length === 0) return false;
     return producto.variantes.some((v: any) => v.enOferta && v.activo);
   };
+
+  const puedeEliminar = usuario?.rol === 'ADMIN' || usuario?.rol === 'GERENTE';
 
   return (
     <div className="min-h-screen bg-crema">
@@ -183,6 +187,12 @@ export default function AdminProductosPage() {
                                     alt={p.nombre} 
                                     className="w-full h-full object-cover"
                                   />
+                                ) : p.imagenPrincipal ? (
+                                  <img 
+                                    src={p.imagenPrincipal} 
+                                    alt={p.nombre} 
+                                    className="w-full h-full object-cover"
+                                  />
                                 ) : (
                                   <Package size={18} className="text-gris-elegante" />
                                 )}
@@ -237,9 +247,11 @@ export default function AdminProductosPage() {
                               <Link href={`/admin/productos/${p.id}`} className="p-1.5 text-gris-elegante hover:text-azul-corp transition-colors" title="Editar">
                                 <Edit2 size={16} />
                               </Link>
-                              <button onClick={() => abrirConfirmacionEliminar(p.id, p.nombre)} className="p-1.5 text-gris-elegante hover:text-red-500 transition-colors" title="Eliminar">
-                                <Trash2 size={16} />
-                              </button>
+                              {puedeEliminar && (
+                                <button onClick={() => abrirConfirmacionEliminar(p.id, p.nombre)} className="p-1.5 text-gris-elegante hover:text-red-500 transition-colors" title="Eliminar">
+                                  <Trash2 size={16} />
+                                </button>
+                              )}
                             </div>
                           </td>
                         </motion.tr>

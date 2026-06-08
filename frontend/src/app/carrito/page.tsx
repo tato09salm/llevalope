@@ -72,9 +72,9 @@ export default function CarritoPage() {
           {/* Lista de items */}
           <div className="lg:col-span-2 space-y-4">
             <AnimatePresence>
-              {items.map(({ producto, cantidad }) => (
+              {items.map(({ producto, variante, cantidad }) => (
                 <motion.div
-                  key={producto.id}
+                  key={variante.id}
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20, height: 0 }}
@@ -82,8 +82,8 @@ export default function CarritoPage() {
                 >
                   {/* Imagen */}
                   <div className="w-24 h-24 bg-crema rounded-xl overflow-hidden shrink-0">
-                    {producto.imagenPrincipal ? (
-                      <Image src={producto.imagenPrincipal} alt={producto.nombre} width={96} height={96} className="w-full h-full object-cover" />
+                    {variante.imagenes?.[0]?.url || producto.imagenPrincipal ? (
+                      <Image src={variante.imagenes?.[0]?.url || producto.imagenPrincipal || ''} alt={producto.nombre} width={96} height={96} className="w-full h-full object-cover" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
                         <ShoppingBag size={30} className="text-gray-300" />
@@ -99,13 +99,18 @@ export default function CarritoPage() {
                     <h3 className="font-semibold text-azul-oscuro text-sm line-clamp-2 mb-2">
                       {producto.nombre}
                     </h3>
-                    <p className="text-xs text-gris-elegante">SKU: {producto.sku}</p>
+                    <p className="text-xs text-gris-elegante">SKU: {variante.sku}</p>
+                    {(variante.color || variante.size) && (
+                      <p className="text-xs text-gris-elegante">
+                        {variante.color?.nombre} {variante.color && variante.size && '|'} {variante.size?.nombre}
+                      </p>
+                    )}
 
                     <div className="flex items-center justify-between mt-3 flex-wrap gap-2">
                       {/* Cantidad */}
                       <div className="flex items-center gap-2 bg-crema rounded-lg p-1">
                         <button
-                          onClick={() => actualizarCantidad(producto.id, cantidad - 1)}
+                          onClick={() => actualizarCantidad(variante.id, cantidad - 1)}
                           className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors"
                         >
                           <Minus size={14} />
@@ -114,8 +119,8 @@ export default function CarritoPage() {
                           {cantidad}
                         </span>
                         <button
-                          onClick={() => actualizarCantidad(producto.id, cantidad + 1)}
-                          disabled={cantidad >= producto.stock}
+                          onClick={() => actualizarCantidad(variante.id, cantidad + 1)}
+                          disabled={cantidad >= variante.stock}
                           className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-40"
                         >
                           <Plus size={14} />
@@ -125,10 +130,10 @@ export default function CarritoPage() {
                       {/* Precio y eliminar */}
                       <div className="flex items-center gap-3">
                         <p className="font-bold text-azul-oscuro">
-                          {formatPrecio(Number(producto.precio) * cantidad)}
+                          {formatPrecio(Number(variante.enOferta && variante.precioOferta ? variante.precioOferta : variante.precioBase) * cantidad)}
                         </p>
                         <button
-                          onClick={() => quitar(producto.id)}
+                          onClick={() => quitar(variante.id)}
                           className="text-red-400 hover:text-red-600 transition-colors p-1"
                           title="Eliminar"
                         >

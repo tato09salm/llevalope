@@ -43,8 +43,12 @@ export default function ProductoDetallePage() {
         }
       }
     } catch (error) {
+      const mensaje =
+        typeof error === 'string'
+          ? error
+          : (error as any)?.message || (error as any)?.error || 'No se pudo cargar el producto';
       console.error('Error al cargar el producto:', error);
-      toast.error('No se pudo cargar el producto');
+      toast.error(mensaje);
       router.push('/productos');
     } finally {
       setCargando(false);
@@ -109,9 +113,14 @@ export default function ProductoDetallePage() {
 
   // Obtener imágenes para mostrar
   const varianteImagenes = varianteSeleccionada?.imagenes || [];
-  const todasImagenes = varianteImagenes.length > 0 
-    ? varianteImagenes 
-    : [...(producto?.imagenes || [])];
+  const todasImagenes =
+    varianteImagenes.length > 0
+      ? varianteImagenes
+      : (producto?.imagenes && producto.imagenes.length > 0)
+        ? producto.imagenes
+        : producto?.imagenPrincipal
+          ? [{ url: producto.imagenPrincipal, alt: producto.nombre, orden: 0, principal: true }]
+          : [];
   const imagenPrincipal = todasImagenes[imagenActual] || null;
 
   const precio = varianteSeleccionada 

@@ -1,3 +1,6 @@
+# Build artifacts
+*.tsbuildinfo
+
 # Dependencies
 node_modules/
 /.pnp
