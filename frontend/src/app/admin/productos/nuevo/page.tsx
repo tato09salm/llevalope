@@ -79,10 +79,10 @@ export default function NuevoProductoPage() {
   const cargarDatos = async () => {
     try {
       const [catsRes, colsRes, collsRes, sizesRes] = await Promise.all([
-        categoriasAPI.listar({ todos: true }),
-        coloresAPI.listar({ todos: true }),
-        sizeCollectionsAPI.listar({ todos: true }),
-        sizesAPI.listar({ todos: true }),
+        categoriasAPI.listarAdmin(),
+        coloresAPI.listarAdmin(),
+        sizeCollectionsAPI.listarAdmin(),
+        sizesAPI.listarAdmin(),
       ]);
       const allCats = Array.isArray(catsRes) ? catsRes : catsRes.datos || [];
       setCategorias(allCats);

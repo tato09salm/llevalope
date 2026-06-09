@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { Controller, Get, Post, Patch, Body, Param, Request, UseGuards, ParseIntPipe } from '@nestjs/common';
-import { Injectable } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { ActualizarEstadoTicketDto, CrearTicketDto, ResponderTicketDto } from './dto/soporte.dto';
 
 @Injectable()
 export class SoporteService {
@@ -33,7 +36,18 @@ export class SoporteService {
     });
   }
 
-  responder(ticketId: number, mensaje: string, esAgente: boolean) {
+  async responder(ticketId: number, usuarioId: number, mensaje: string, esAgente: boolean) {
+    const ticket = await this.prisma.ticketSoporte.findUnique({
+      where: { id: ticketId },
+      select: { id: true, usuarioId: true },
+    });
+    if (!ticket) {
+      throw new NotFoundException('Ticket no encontrado');
+    }
+    if (!esAgente && ticket.usuarioId !== usuarioId) {
+      throw new ForbiddenException('No puedes responder tickets de otro usuario');
+    }
+
     return this.prisma.mensajeTicket.create({
       data: { ticketId, mensaje, esAgente },
     });
@@ -49,14 +63,18 @@ export class SoporteService {
 export class SoporteController {
   constructor(private s: SoporteService) {}
 
-  @Post('tickets') crear(@Request() req, @Body() d: any) { return this.s.crearTicket(req.user.id, d); }
+  @Post('tickets') crear(@Request() req, @Body() d: CrearTicketDto) { return this.s.crearTicket(req.user.id, d); }
   @Get('mis-tickets') misTickets(@Request() req) { return this.s.misTickets(req.user.id); }
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'GERENTE', 'OPERADOR')
   @Get('admin/tickets') listarTodos() { return this.s.listarTodos(); }
-  @Post('tickets/:id/responder') responder(@Param('id', ParseIntPipe) id: number, @Body() b: any, @Request() req) {
+  @Post('tickets/:id/responder') responder(@Param('id', ParseIntPipe) id: number, @Body() b: ResponderTicketDto, @Request() req) {
     const esAgente = ['ADMIN', 'GERENTE', 'OPERADOR'].includes(req.user.rol);
-    return this.s.responder(id, b.mensaje, esAgente);
+    return this.s.responder(id, req.user.id, b.mensaje, esAgente);
   }
-  @Patch('tickets/:id/estado') actualizarEstado(@Param('id', ParseIntPipe) id: number, @Body() b: any) {
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'GERENTE', 'OPERADOR')
+  @Patch('tickets/:id/estado') actualizarEstado(@Param('id', ParseIntPipe) id: number, @Body() b: ActualizarEstadoTicketDto) {
     return this.s.actualizarEstado(id, b.estado);
   }
 }

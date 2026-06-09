@@ -9,8 +9,15 @@ export class SizesController {
   constructor(private sizesService: SizesService) {}
 
   @Get()
-  listar(@Query('todos') todos?: boolean) {
-    return this.sizesService.listar(todos);
+  listar() {
+    return this.sizesService.listar(false);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'GERENTE', 'OPERADOR')
+  @Get('admin/todos')
+  listarAdmin() {
+    return this.sizesService.listar(true);
   }
 
   @Get(':id')

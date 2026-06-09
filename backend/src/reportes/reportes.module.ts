@@ -3,6 +3,8 @@ import { Controller, Get, UseGuards } from '@nestjs/common';
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
 
 @Injectable()
 export class ReportesService {
@@ -73,7 +75,8 @@ export class ReportesService {
   }
 }
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN', 'GERENTE', 'OPERADOR')
 @Controller('reportes')
 export class ReportesController {
   constructor(private s: ReportesService) {}

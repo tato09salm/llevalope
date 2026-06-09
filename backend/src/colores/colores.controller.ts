@@ -9,8 +9,15 @@ export class ColoresController {
   constructor(private coloresService: ColoresService) {}
 
   @Get()
-  listar(@Query('todos') todos?: boolean) {
-    return this.coloresService.listar(todos);
+  listar() {
+    return this.coloresService.listar(false);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'GERENTE', 'OPERADOR')
+  @Get('admin/todos')
+  listarAdmin() {
+    return this.coloresService.listar(true);
   }
 
   @Get(':id')

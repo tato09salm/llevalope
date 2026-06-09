@@ -28,7 +28,11 @@ export const useAuthStore = create<AuthState>()(
         set({ cargando: true, error: null });
         try {
           const resp: any = await authAPI.iniciarSesion({ correo, contrasena });
-          Cookies.set('llevalope_token', resp.token, { expires: 7 });
+          Cookies.set('llevalope_token', resp.token, {
+            expires: 7,
+            sameSite: 'strict',
+            secure: typeof window !== 'undefined' && window.location.protocol === 'https:',
+          });
           set({ usuario: resp.usuario, token: resp.token, cargando: false });
         } catch (err: any) {
           set({
@@ -43,7 +47,11 @@ export const useAuthStore = create<AuthState>()(
         set({ cargando: true, error: null });
         try {
           const resp: any = await authAPI.registrar(datos);
-          Cookies.set('llevalope_token', resp.token, { expires: 7 });
+          Cookies.set('llevalope_token', resp.token, {
+            expires: 7,
+            sameSite: 'strict',
+            secure: typeof window !== 'undefined' && window.location.protocol === 'https:',
+          });
           set({ usuario: resp.usuario, token: resp.token, cargando: false });
         } catch (err: any) {
           set({ error: err.message || 'Error al registrarse', cargando: false });
@@ -69,7 +77,7 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'llevalope-auth',
-      partialize: (state) => ({ usuario: state.usuario, token: state.token }),
+      partialize: (state) => ({ usuario: state.usuario }),
     },
   ),
 );

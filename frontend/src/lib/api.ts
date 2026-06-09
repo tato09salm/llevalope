@@ -7,6 +7,7 @@ const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
   timeout: 10000,
+  withCredentials: true,
 });
 
 // Interceptor: agregar token JWT
@@ -50,6 +51,7 @@ export const authAPI = {
 
 export const productosAPI = {
   listar: (params?: any) => get('/productos', { params }),
+  listarAdmin: (params?: any) => get('/productos/admin/todos', { params }),
   obtener: (slug: string) => get(`/productos/slug/${slug}`),
   obtenerPorId: (id: number) => get(`/productos/${id}`),
   destacados: () => get('/productos/destacados'),
@@ -63,6 +65,8 @@ export const productosAPI = {
 export const categoriasAPI = {
   listar: (params?: any) => get('/categorias', { params }),
   listarPadres: (params?: any) => get('/categorias/padres', { params }),
+  listarAdmin: () => get('/categorias/admin/todos'),
+  listarPadresAdmin: () => get('/categorias/admin/padres'),
   obtener: (id: number) => get(`/categorias/${id}`),
   crear: (datos: any) => post('/categorias', datos),
   actualizar: (id: number, datos: any) => put(`/categorias/${id}`, datos),
@@ -72,6 +76,7 @@ export const categoriasAPI = {
 
 export const coloresAPI = {
   listar: (params?: any) => get('/colores', { params }),
+  listarAdmin: () => get('/colores/admin/todos'),
   obtener: (id: number) => get(`/colores/${id}`),
   crear: (datos: any) => post('/colores', datos),
   actualizar: (id: number, datos: any) => put(`/colores/${id}`, datos),
@@ -81,6 +86,7 @@ export const coloresAPI = {
 
 export const sizeCollectionsAPI = {
   listar: (params?: any) => get('/tallas-colecciones', { params }),
+  listarAdmin: () => get('/tallas-colecciones/admin/todos'),
   obtener: (id: number) => get(`/tallas-colecciones/${id}`),
   crear: (datos: any) => post('/tallas-colecciones', datos),
   actualizar: (id: number, datos: any) => put(`/tallas-colecciones/${id}`, datos),
@@ -90,6 +96,7 @@ export const sizeCollectionsAPI = {
 
 export const sizesAPI = {
   listar: (params?: any) => get('/tallas', { params }),
+  listarAdmin: () => get('/tallas/admin/todos'),
   obtener: (id: number) => get(`/tallas/${id}`),
   crear: (datos: any) => post('/tallas', datos),
   actualizar: (id: number, datos: any) => put(`/tallas/${id}`, datos),

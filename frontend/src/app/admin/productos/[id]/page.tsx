@@ -81,10 +81,10 @@ export default function EditarProductoPage() {
     setCargandoDatos(true);
     try {
       const [catsRes, colsRes, collsRes, sizesRes, productoRes] = await Promise.all([
-        categoriasAPI.listar({ todos: true }),
-        coloresAPI.listar({ todos: true }),
-        sizeCollectionsAPI.listar({ todos: true }),
-        sizesAPI.listar({ todos: true }),
+        categoriasAPI.listarAdmin(),
+        coloresAPI.listarAdmin(),
+        sizeCollectionsAPI.listarAdmin(),
+        sizesAPI.listarAdmin(),
         productosAPI.obtenerPorId(id),
       ]);
 

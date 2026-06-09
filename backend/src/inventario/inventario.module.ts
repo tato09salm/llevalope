@@ -1,8 +1,11 @@
 import { Module } from '@nestjs/common';
 import { Controller, Get, Post, Body, Query, UseGuards } from '@nestjs/common';
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { AjustarStockDto, MovimientosInventarioQueryDto } from './dto/inventario.dto';
 
 @Injectable()
 export class InventarioService {
@@ -31,8 +34,14 @@ export class InventarioService {
       where: { id: varianteId },
       select: { id: true, stock: true, productoId: true }
     });
+    if (!variante) {
+      throw new NotFoundException('Variante no encontrada');
+    }
     const stockAnterior = variante.stock;
     const stockNuevo = tipo === 'SALIDA' ? stockAnterior - cantidad : stockAnterior + cantidad;
+    if (stockNuevo < 0) {
+      throw new BadRequestException('El ajuste deja el stock en un valor negativo');
+    }
 
     return this.prisma.$transaction([
       this.prisma.varianteProducto.update({ where: { id: varianteId }, data: { stock: stockNuevo } }),
@@ -51,14 +60,15 @@ export class InventarioService {
   }
 }
 
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles('ADMIN', 'GERENTE', 'OPERADOR')
 @Controller('inventario')
 export class InventarioController {
   constructor(private s: InventarioService) {}
 
   @Get('stock-bajo') stockBajo() { return this.s.stockBajo(); }
-  @Get('movimientos') movimientos(@Query('varianteId') id?: number) { return this.s.movimientos(id ? +id : undefined); }
-  @Post('ajustar') ajustar(@Body() b: any) { return this.s.ajustarStock(b.varianteId, b.cantidad, b.motivo, b.tipo); }
+  @Get('movimientos') movimientos(@Query() query: MovimientosInventarioQueryDto) { return this.s.movimientos(query.varianteId); }
+  @Post('ajustar') ajustar(@Body() b: AjustarStockDto) { return this.s.ajustarStock(b.varianteId, b.cantidad, b.motivo, b.tipo); }
 }
 
 @Module({ controllers: [InventarioController], providers: [InventarioService] })

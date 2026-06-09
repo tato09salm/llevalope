@@ -3,6 +3,9 @@ import { Controller, Get, Patch, Body, Request, UseGuards } from '@nestjs/common
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { ActualizarPerfilDto, AgregarCarritoDto } from './dto/usuarios.dto';
 
 @Injectable()
 export class UsuariosService {
@@ -83,13 +86,15 @@ export class UsuariosService {
 export class UsuariosController {
   constructor(private usuariosService: UsuariosService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'GERENTE', 'OPERADOR')
   @Get()
   listar() {
     return this.usuariosService.listar();
   }
 
   @Patch('perfil')
-  actualizarPerfil(@Request() req, @Body() datos: any) {
+  actualizarPerfil(@Request() req, @Body() datos: ActualizarPerfilDto) {
     return this.usuariosService.actualizarPerfil(req.user.id, datos);
   }
 
@@ -99,7 +104,7 @@ export class UsuariosController {
   }
 
   @Patch('carrito')
-  agregarCarrito(@Request() req, @Body() body: { productoId: number; varianteId: number; cantidad: number }) {
+  agregarCarrito(@Request() req, @Body() body: AgregarCarritoDto) {
     return this.usuariosService.agregarCarrito(req.user.id, body.productoId, body.varianteId, body.cantidad || 1);
   }
 

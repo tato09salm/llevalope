@@ -74,7 +74,7 @@ export default function AdminCategoriasPage() {
   const cargar = async () => {
     setCargando(true);
     try {
-      const resp: any = await categoriasAPI.listar({ todos: true });
+      const resp: any = await categoriasAPI.listarAdmin();
       setCategorias(resp || []);
     } catch {
       setCategorias([]);

@@ -9,13 +9,27 @@ export class CategoriasController {
   constructor(private categoriasService: CategoriasService) {}
 
   @Get()
-  listar(@Query('todos') todos?: boolean) {
-    return this.categoriasService.listar(todos);
+  listar() {
+    return this.categoriasService.listar(false);
   }
 
   @Get('padres')
-  listarCategoriasPadre(@Query('todos') todos?: boolean) {
-    return this.categoriasService.listarCategoriasPadre(todos);
+  listarCategoriasPadre() {
+    return this.categoriasService.listarCategoriasPadre(false);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'GERENTE', 'OPERADOR')
+  @Get('admin/todos')
+  listarAdmin() {
+    return this.categoriasService.listar(true);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'GERENTE', 'OPERADOR')
+  @Get('admin/padres')
+  listarCategoriasPadreAdmin() {
+    return this.categoriasService.listarCategoriasPadre(true);
   }
 
   @Get(':id')
