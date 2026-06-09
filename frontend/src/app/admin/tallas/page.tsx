@@ -30,8 +30,8 @@ export default function AdminTallasPage() {
     try {
       setCargando(true);
       const [coleccionesData, tallasData] = await Promise.all([
-        sizeCollectionsAPI.listar({ todos: true }),
-        sizesAPI.listar({ todos: true }),
+        sizeCollectionsAPI.listarAdmin(),
+        sizesAPI.listarAdmin(),
       ]);
       
       const coleccionesList = Array.isArray(coleccionesData) ? coleccionesData : [];

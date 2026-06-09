@@ -26,7 +26,7 @@ export default function AdminColoresPage() {
   const cargar = async () => {
     try {
       setCargando(true);
-      const data = await coloresAPI.listar({ todos: true });
+      const data = await coloresAPI.listarAdmin();
       setColores(Array.isArray(data) ? data : []);
     } catch {
       setColores([]);

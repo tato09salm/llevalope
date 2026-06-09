@@ -39,7 +39,7 @@ function NuevaCategoriaForm() {
 
   const cargarCategorias = async () => {
     try {
-      const resp: any = await categoriasAPI.listar({ todos: true });
+      const resp: any = await categoriasAPI.listarAdmin();
       const todas = resp || [];
       setCategoriasPadre(todas.filter((c: Categoria) => !c.categoriaPadreId));
     } catch {

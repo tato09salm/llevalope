@@ -23,7 +23,6 @@ export class ProductosController {
     @Query('precioMin') precioMin?: string | number,
     @Query('precioMax') precioMax?: string | number,
     @Query('ordenar') ordenar?: string,
-    @Query('todos') todos?: boolean,
   ) {
     // Properly parse precioMin and precioMax - handle string "0"
     const parsePrecio = (valor: any) => {
@@ -43,7 +42,43 @@ export class ProductosController {
       precioMin: parsePrecio(precioMin),
       precioMax: parsePrecio(precioMax),
       ordenar,
-      todos: todos !== undefined ? todos === true || (todos as any) === 'true' : undefined,
+      todos: false,
+    });
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'GERENTE', 'OPERADOR')
+  @Get('admin/todos')
+  listarAdmin(
+    @Query('pagina') pagina?: number,
+    @Query('limite') limite?: number,
+    @Query('busqueda') busqueda?: string,
+    @Query('categoriaId') categoriaId?: number,
+    @Query('categoria') categoria?: string,
+    @Query('enOferta') enOferta?: boolean,
+    @Query('destacado') destacado?: boolean,
+    @Query('precioMin') precioMin?: string | number,
+    @Query('precioMax') precioMax?: string | number,
+    @Query('ordenar') ordenar?: string,
+  ) {
+    const parsePrecio = (valor: any) => {
+      if (valor === undefined || valor === null || valor === '') return undefined;
+      const num = Number(valor);
+      return isNaN(num) ? undefined : num;
+    };
+
+    return this.productosService.listar({
+      pagina: pagina ? +pagina : 1,
+      limite: limite ? +limite : 20,
+      busqueda,
+      categoriaId: categoriaId ? +categoriaId : undefined,
+      categoria,
+      enOferta: enOferta !== undefined ? enOferta === true || (enOferta as any) === 'true' : undefined,
+      destacado: destacado !== undefined ? destacado === true || (destacado as any) === 'true' : undefined,
+      precioMin: parsePrecio(precioMin),
+      precioMax: parsePrecio(precioMax),
+      ordenar,
+      todos: true,
     });
   }
 

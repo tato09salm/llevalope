@@ -27,7 +27,7 @@ export default function AdminProductosPage() {
   const cargar = async () => {
     setCargando(true);
     try {
-      const resp: any = await productosAPI.listar({ busqueda, limite: 50, todos: true });
+      const resp: any = await productosAPI.listarAdmin({ busqueda, limite: 50 });
       console.log('✅ API Response:', resp);
       console.log('📦 Productos:', resp.datos);
       console.log('🔢 Total:', resp.total);
