@@ -422,6 +422,73 @@ CREATE TABLE notificaciones (
 );
 
 -- ========================
+-- TABLA: cupones_pedido
+-- ========================
+CREATE TABLE cupones_pedido (
+    id SERIAL PRIMARY KEY,
+    pedido_id INTEGER UNIQUE NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+    cupon_id INTEGER NOT NULL REFERENCES cupones(id),
+    codigo_cupon VARCHAR(50) NOT NULL,
+    tipo_descuento tipo_cupon NOT NULL,
+    valor_descuento DECIMAL(10,2) NOT NULL,
+    monto_ahorrado DECIMAL(10,2) NOT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================
+-- TABLA: pagos_pedido
+-- ========================
+CREATE TABLE pagos_pedido (
+    id SERIAL PRIMARY KEY,
+    pedido_id INTEGER NOT NULL REFERENCES pedidos(id) ON DELETE CASCADE,
+    metodo metodo_pago NOT NULL,
+    estado estado_pago DEFAULT 'PENDIENTE',
+    monto DECIMAL(10,2) NOT NULL,
+    referencia_pago VARCHAR(200),
+    codigo_respuesta VARCHAR(100),
+    mensaje_respuesta VARCHAR(500),
+    intento_numero INTEGER DEFAULT 1,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================
+-- TABLA: historial_envio
+-- ========================
+CREATE TABLE historial_envio (
+    id SERIAL PRIMARY KEY,
+    envio_pedido_id INTEGER NOT NULL REFERENCES envios_pedido(id) ON DELETE CASCADE,
+    estado VARCHAR(50) NOT NULL,
+    ubicacion VARCHAR(300),
+    descripcion VARCHAR(500),
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================
+-- TABLA: auditoria_log
+-- ========================
+CREATE TABLE auditoria_log (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER REFERENCES usuarios(id) ON DELETE SET NULL,
+    accion VARCHAR(100) NOT NULL,
+    entidad VARCHAR(100) NOT NULL,
+    entidad_id INTEGER,
+    datos_antes JSONB,
+    datos_despues JSONB,
+    ip VARCHAR(45),
+    user_agent VARCHAR(500),
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Agregar columnas nuevas a tablas existentes
+ALTER TABLE pedidos
+    ADD COLUMN IF NOT EXISTS cupon_id INTEGER REFERENCES cupones(id),
+    ADD COLUMN IF NOT EXISTS descuento_cupon DECIMAL(10,2) DEFAULT 0;
+
+ALTER TABLE cupones
+    ADD COLUMN IF NOT EXISTS max_usos_por_usuario INTEGER DEFAULT 1;
+
+-- ========================
 -- ÍNDICES
 -- ========================
 CREATE INDEX idx_productos_categoria ON productos(categoria_id);
@@ -435,7 +502,14 @@ CREATE INDEX idx_pedidos_usuario ON pedidos(usuario_id);
 CREATE INDEX idx_pedidos_estado ON pedidos(estado);
 CREATE INDEX idx_items_carrito_usuario ON items_carrito(usuario_id);
 CREATE INDEX idx_notificaciones_usuario ON notificaciones(usuario_id, leida);
-
+-- Índices nuevos
+CREATE INDEX idx_pagos_pedido_pedido ON pagos_pedido(pedido_id);
+CREATE INDEX idx_pagos_pedido_referencia ON pagos_pedido(referencia_pago);
+CREATE INDEX idx_historial_envio_envio ON historial_envio(envio_pedido_id);
+CREATE INDEX idx_auditoria_log_usuario ON auditoria_log(usuario_id);
+CREATE INDEX idx_auditoria_log_entidad ON auditoria_log(entidad, entidad_id);
+CREATE INDEX idx_auditoria_log_fecha ON auditoria_log(creado_en);
+CREATE INDEX idx_cupones_pedido_pedido ON cupones_pedido(pedido_id);
 -- ========================
 -- DATOS INICIALES (SEMILLAS)
 -- ========================

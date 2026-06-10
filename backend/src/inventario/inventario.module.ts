@@ -12,10 +12,12 @@ export class InventarioService {
   constructor(private prisma: PrismaService) {}
 
   async stockBajo() {
-    return this.prisma.varianteProducto.findMany({
-      where: { activo: true, stock: { lte: this.prisma.varianteProducto.fields.stockMinimo as any } },
+    // Obtener todas las variantes y filtrar manualmente (Prisma no permite campos en where directamente)
+    const variantes = await this.prisma.varianteProducto.findMany({
+      where: { activo: true },
       select: { id: true, sku: true, stock: true, stockMinimo: true, producto: { select: { id: true, nombre: true } } },
     });
+    return variantes.filter(v => v.stock <= v.stockMinimo);
   }
 
   async movimientos(varianteId?: number) {

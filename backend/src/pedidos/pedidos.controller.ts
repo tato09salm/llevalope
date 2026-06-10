@@ -45,4 +45,33 @@ export class PedidosController {
   ) {
     return this.pedidosService.actualizarEstado(id, body.estado, body.descripcion);
   }
+
+  @Get(':pedidoId/pagos')
+  listarPagos(
+    @Param('pedidoId', ParseIntPipe) pedidoId: number,
+    @Request() req
+  ) {
+    const esAdmin = ['ADMIN', 'GERENTE', 'OPERADOR'].includes(req.user.rol);
+    return this.pedidosService.listarPagosPedido(pedidoId, esAdmin ? undefined : req.user.id);
+  }
+
+  @Post(':pedidoId/pagos')
+  crearPago(
+    @Param('pedidoId', ParseIntPipe) pedidoId: number,
+    @Body() datos: any,
+    @Request() req
+  ) {
+    const esAdmin = ['ADMIN', 'GERENTE', 'OPERADOR'].includes(req.user.rol);
+    return this.pedidosService.crearPago(pedidoId, datos, esAdmin ? undefined : req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'GERENTE', 'OPERADOR')
+  @Patch('pagos/:pagoId')
+  actualizarPago(
+    @Param('pagoId', ParseIntPipe) pagoId: number,
+    @Body() datos: any
+  ) {
+    return this.pedidosService.actualizarPago(pagoId, datos);
+  }
 }

@@ -36,6 +36,7 @@ model Usuario {
   tickets       TicketSoporte[]
   notificaciones Notificacion[]
   carrito       ItemCarrito[]
+  auditorias     AuditoriaLog[]  //
 
   @@map("usuarios")
 }
@@ -80,6 +81,7 @@ model Categoria {
   slug          String   @unique @db.VarChar(100)
   descripcion   String?  @db.Text
   imagen        String?  @db.Text
+  icono         String?  @db.VarChar(100)
   categoriaPadreId Int? @map("categoria_padre_id")
   activa        Boolean  @default(true)
   orden         Int      @default(0)
@@ -240,6 +242,7 @@ model ItemCarrito {
   producto    Producto           @relation(fields: [productoId], references: [id], onDelete: Cascade)
   variante    VarianteProducto   @relation(fields: [varianteId], references: [id], onDelete: Cascade)
 
+  @@index([usuarioId])
   @@unique([usuarioId, varianteId])
   @@map("items_carrito")
 }
@@ -280,13 +283,21 @@ model Pedido {
   trackingCode    String?  @db.VarChar(100) @map("tracking_code")
   creadoEn        DateTime @default(now()) @map("creado_en")
   actualizadoEn   DateTime @updatedAt @map("actualizado_en")
+  cuponId         Int?     @map("cupon_id")                
+  descuentoCupon  Decimal  @default(0) @db.Decimal(10,2) @map("descuento_cupon")  
+
 
   usuario         Usuario          @relation(fields: [usuarioId], references: [id])
   direccion       DireccionUsuario? @relation(fields: [direccionId], references: [id])
   items           ItemPedido[]
   historial       HistorialPedido[]
   envio           EnvioPedido?
+  cupon           Cupon?   @relation(fields: [cuponId], references: [id])  
+  cuponAplicado   CuponPedido?
+  pagos           PagoPedido[] 
 
+  @@index([usuarioId])
+  @@index([estado])
   @@map("pedidos")
 }
 
@@ -365,8 +376,47 @@ model EnvioPedido {
   actualizadoEn   DateTime @updatedAt @map("actualizado_en")
 
   pedido          Pedido @relation(fields: [pedidoId], references: [id])
-
+  
+  historial       HistorialEnvio[] 
   @@map("envios_pedido")
+}
+
+
+// Trazabilidad de intentos de pago por pedido
+// Permite reintentos, referencias externas (pasarela), y auditoría
+model PagoPedido {
+  id               Int        @id @default(autoincrement())
+  pedidoId         Int        @map("pedido_id")
+  metodo           MetodoPago
+  estado           EstadoPago @default(PENDIENTE)
+  monto            Decimal    @db.Decimal(10, 2)
+  referenciaPago   String?    @db.VarChar(200) @map("referencia_pago")  // ID de pasarela
+  codigoRespuesta  String?    @db.VarChar(100) @map("codigo_respuesta")
+  mensajeRespuesta String?    @db.VarChar(500) @map("mensaje_respuesta")
+  intentoNumero    Int        @default(1) @map("intento_numero")
+  creadoEn         DateTime   @default(now()) @map("creado_en")
+  actualizadoEn    DateTime   @updatedAt @map("actualizado_en")
+
+  pedido           Pedido     @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+
+  @@index([pedidoId])
+  @@index([referenciaPago])
+  @@map("pagos_pedido")
+}
+
+
+model HistorialEnvio {
+  id              Int      @id @default(autoincrement())
+  envioPedidoId   Int      @map("envio_pedido_id")
+  estado          String   @db.VarChar(50)
+  ubicacion       String?  @db.VarChar(300)
+  descripcion     String?  @db.VarChar(500)
+  creadoEn        DateTime @default(now()) @map("creado_en")
+
+  envioPedido     EnvioPedido @relation(fields: [envioPedidoId], references: [id], onDelete: Cascade)
+
+  @@index([envioPedidoId])
+  @@map("historial_envio")
 }
 
 // ========================
@@ -581,9 +631,13 @@ model Cupon {
   minCompra     Decimal  @default(0) @db.Decimal(10, 2) @map("min_compra")
   usos          Int      @default(0)
   maxUsos       Int?     @map("max_usos")
+  maxUsosPorUsuario Int? @default(1) @map("max_usos_por_usuario")
   activo        Boolean  @default(true)
   fechaInicio   DateTime @default(now()) @map("fecha_inicio")
   fechaFin      DateTime? @map("fecha_fin")
+
+  pedidos       Pedido[]
+  cuponesPedido CuponPedido[]
 
   @@map("cupones")
 }
@@ -593,6 +647,25 @@ enum TipoCupon {
   MONTO_FIJO
 
   @@map("tipo_cupon")
+}
+
+
+// Tabla puente que registra qué cupón se aplicó a qué pedido
+// y captura el valor exacto al momento de la compra
+model CuponPedido {
+  id             Int      @id @default(autoincrement())
+  pedidoId       Int      @unique @map("pedido_id")
+  cuponId        Int      @map("cupon_id")
+  codigoCupon    String   @db.VarChar(50) @map("codigo_cupon")
+  tipoDescuento  TipoCupon @map("tipo_descuento")
+  valorDescuento Decimal  @db.Decimal(10, 2) @map("valor_descuento")
+  montoAhorrado  Decimal  @db.Decimal(10, 2) @map("monto_ahorrado")
+  creadoEn       DateTime @default(now()) @map("creado_en")
+
+  pedido         Pedido   @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  cupon          Cupon    @relation(fields: [cuponId], references: [id])
+
+  @@map("cupones_pedido")
 }
 
 // ========================
@@ -610,6 +683,28 @@ model Notificacion {
   creadoEn    DateTime @default(now()) @map("creado_en")
 
   usuario     Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-
+  
+  @@index([usuarioId, leida])
   @@map("notificaciones")
+}
+
+// Auditoría de operaciones clave del sistema
+model AuditoriaLog {
+  id          Int      @id @default(autoincrement())
+  usuarioId   Int?     @map("usuario_id")
+  accion      String   @db.VarChar(100)    // ej: "CREAR_PEDIDO", "CAMBIAR_ESTADO"
+  entidad     String   @db.VarChar(100)    // ej: "Pedido", "Usuario"
+  entidadId   Int?     @map("entidad_id")
+  datosAntes  Json?    @map("datos_antes")
+  datosDespues Json?   @map("datos_despues")
+  ip          String?  @db.VarChar(45)
+  userAgent   String?  @db.VarChar(500) @map("user_agent")
+  creadoEn    DateTime @default(now()) @map("creado_en")
+
+  usuario     Usuario? @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+
+  @@index([usuarioId])
+  @@index([entidad, entidadId])
+  @@index([creadoEn])
+  @@map("auditoria_log")
 }

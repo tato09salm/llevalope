@@ -47,12 +47,32 @@ export class ReportesService {
     const desde = new Date();
     desde.setDate(desde.getDate() - dias);
 
-    return this.prisma.pedido.groupBy({
-      by: ['creadoEn'],
+    // Obtener pedidos y agrupar manualmente por día
+    const pedidos = await this.prisma.pedido.findMany({
       where: { creadoEn: { gte: desde }, estadoPago: 'PAGADO' },
-      _sum: { total: true },
-      _count: { id: true },
+      select: { creadoEn: true, total: true },
     });
+
+    // Agrupar por día
+    const grupos = new Map();
+    for (const pedido of pedidos) {
+      const fecha = pedido.creadoEn.toISOString().split('T')[0];
+      const grupo = grupos.get(fecha) || { total: 0, count: 0 };
+      grupo.total += Number(pedido.total);
+      grupo.count += 1;
+      grupos.set(fecha, grupo);
+    }
+
+    // Convertir a array y ordenar
+    const resultado = Array.from(grupos.entries())
+      .map(([fecha, datos]) => ({
+        fecha,
+        total: datos.total,
+        cantidad: datos.count
+      }))
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
+
+    return resultado;
   }
 
   async productosMasVendidos(limite = 10) {
