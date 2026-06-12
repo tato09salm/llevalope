@@ -2,6 +2,7 @@ import { Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   IsArray,
+  IsBoolean,
   IsIn,
   IsInt,
   IsOptional,
@@ -12,6 +13,7 @@ import {
 } from 'class-validator';
 
 const METODOS_PAGO = ['TARJETA', 'YAPE', 'PLIN', 'TRANSFERENCIA', 'CONTRA_ENTREGA', 'PAYPAL'] as const;
+const TIPOS_ENVIO = ['STANDARD', 'EXPRESS'] as const;
 const ESTADOS_PEDIDO = [
   'PENDIENTE',
   'CONFIRMADO',
@@ -61,6 +63,43 @@ export class CrearPedidoDto {
   @IsString()
   @MaxLength(50)
   cupon?: string;
+
+  @IsOptional()
+  @IsIn(TIPOS_ENVIO)
+  tipoEnvio?: (typeof TIPOS_ENVIO)[number] = 'STANDARD';
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  checkoutToken?: string;
+}
+
+export class PreviewCheckoutDto {
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => PedidoItemDto)
+  items: PedidoItemDto[];
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  direccionId?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  cupon?: string;
+
+  @IsOptional()
+  @IsIn(TIPOS_ENVIO)
+  tipoEnvio?: (typeof TIPOS_ENVIO)[number] = 'STANDARD';
+
+  @IsOptional()
+  @Type(() => Boolean)
+  @IsBoolean()
+  reservarStock?: boolean = false;
 }
 
 export class ListarPedidosAdminDto {

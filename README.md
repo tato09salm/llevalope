@@ -68,11 +68,7 @@ llevalope/
 # 1. Clonar / extraer el proyecto
 cd llevalope
 
-# 2. Configurar variables de entorno
-cp .env .env.local
-# Editar .env con tus datos (ya configurado para tu entorno)
-
-# 3. Levantar todo con Docker
+# 2. Levantar todo con Docker
 docker-compose up -d
 
 # 4. Abrir en el navegador
@@ -88,13 +84,22 @@ docker-compose up -d
 - PostgreSQL 15+
 - npm o yarn
 
-#### Base de datos
-```sql
--- Crear base de datos
-psql -U postgres -c "CREATE DATABASE llevalope;"
+#### Base de datos (Windows + PostgreSQL local)
+1) Instala PostgreSQL (15+). Durante el instalador, define la contraseña del usuario `postgres` como `postgres` para que el proyecto arranque sin cambios.
 
--- Ejecutar script de inicialización
-psql -U postgres -d llevalope -f database/seeds/init.sql
+2) Ejecuta estos comandos en PowerShell desde la carpeta raíz del proyecto:
+```powershell
+# Ruta completa de psql.exe (ajusta el 16 si instalaste otra version)
+$psql = "$env:ProgramFiles\PostgreSQL\16\bin\psql.exe"
+
+# Verifica que psql funciona
+& $psql --version
+
+# Crear base de datos
+& $psql -U postgres -c "CREATE DATABASE llevalope;"
+
+# Ejecutar script de inicializacion con la ruta completa del archivo
+& $psql -U postgres -d llevalope -f (Resolve-Path ".\database\seeds\init.sql")
 ```
 
 #### Backend (NestJS)
@@ -104,10 +109,10 @@ cd backend
 # Instalar dependencias
 npm install
 
-# Configurar variables de entorno
-cp ../.env .env
-# Asegúrate que DATABASE_URL esté correcto:
-# DATABASE_URL=postgresql://postgres:sa@localhost:5432/llevalope
+# Variables de entorno
+# El archivo backend/.env ya incluye valores por defecto para PostgreSQL local:
+# DATABASE_URL=postgresql://postgres:postgres@localhost:5432/llevalope
+# Si tu contraseña de postgres es distinta, actualiza solo ese valor.
 
 # Generar cliente Prisma
 npx prisma generate

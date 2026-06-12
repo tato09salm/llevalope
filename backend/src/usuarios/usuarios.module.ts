@@ -5,12 +5,13 @@ import { PrismaService } from '../common/prisma/prisma.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { ActualizarPerfilDto, AgregarCarritoDto } from './dto/usuarios.dto';
+import {
+  ActualizarCantidadCarritoDto,
+  ActualizarPerfilDto,
+  AgregarCarritoDto,
+  DireccionUsuarioDto,
+} from './dto/usuarios.dto';
 
-// DTOs para direcciones y carrito
-class ActualizarCantidadCarritoDto {
-  cantidad: number;
-}
 class ListarUsuariosDto {
   pagina?: number;
   limite?: number;
@@ -104,22 +105,58 @@ export class UsuariosService {
     return this.prisma.direccionUsuario.findMany({ where: { usuarioId } });
   }
 
+  async actualizarEstadoUsuario(id: number, activo: boolean) {
+    return this.prisma.usuario.update({
+      where: { id },
+      data: { activo },
+      select: {
+        id: true,
+        nombre: true,
+        apellido: true,
+        correo: true,
+        telefono: true,
+        rol: true,
+        activo: true,
+        verificado: true,
+        creadoEn: true,
+      },
+    });
+  }
+
   async agregarCarrito(usuarioId: number, productoId: number, varianteId: number, cantidad: number) {
+    const variante = await this.prisma.varianteProducto.findUnique({
+      where: { id: varianteId },
+      include: { producto: { select: { id: true, nombre: true, activo: true } } },
+    });
+
+    if (!variante || !variante.activo || !variante.producto.activo) {
+      throw new NotFoundException('La variante seleccionada no esta disponible');
+    }
+
+    if (variante.productoId !== productoId) {
+      throw new BadRequestException('La variante no pertenece al producto enviado');
+    }
+
     const existe = await this.prisma.itemCarrito.findUnique({
       where: { usuarioId_varianteId: { usuarioId, varianteId } },
     });
 
+    const cantidadFinal = (existe?.cantidad || 0) + cantidad;
+    if (cantidadFinal > variante.stock) {
+      throw new BadRequestException(`Solo hay ${variante.stock} unidades disponibles para esta variante`);
+    }
+
     if (existe) {
       return this.prisma.itemCarrito.update({
         where: { id: existe.id },
-        data: { cantidad: existe.cantidad + cantidad },
-        include: { producto: true, variante: true },
+        data: { cantidad: cantidadFinal },
+        include: this.includeCarrito(),
       });
     }
 
     return this.prisma.itemCarrito.create({
       data: { usuarioId, productoId, varianteId, cantidad },
-      include: { producto: true, variante: true },
+      include: this.includeCarrito(),
     });
   }
 
@@ -127,37 +164,54 @@ export class UsuariosService {
     if (cantidad <= 0) throw new BadRequestException('La cantidad debe ser mayor a 0');
     
     const item = await this.prisma.itemCarrito.findUnique({
-      where: { usuarioId_varianteId: { usuarioId, varianteId } }
+      where: { usuarioId_varianteId: { usuarioId, varianteId } },
+      include: { variante: true },
     });
     if (!item) throw new NotFoundException('Item no encontrado en el carrito');
+    if (cantidad > item.variante.stock) {
+      throw new BadRequestException(`Solo hay ${item.variante.stock} unidades disponibles para esta variante`);
+    }
 
     return this.prisma.itemCarrito.update({
       where: { id: item.id },
       data: { cantidad },
-      include: { producto: true, variante: true },
+      include: this.includeCarrito(),
     });
   }
 
   async obtenerCarrito(usuarioId: number) {
     return this.prisma.itemCarrito.findMany({
       where: { usuarioId },
-      include: {
-        producto: {
-          include: { imagenes: { where: { principal: true }, take: 1 } },
-        },
-        variante: true,
-      },
+      include: this.includeCarrito(),
     });
   }
 
   async eliminarDelCarrito(usuarioId: number, varianteId: number) {
-    return this.prisma.itemCarrito.delete({
-      where: { usuarioId_varianteId: { usuarioId, varianteId } },
+    return this.prisma.itemCarrito.deleteMany({
+      where: { usuarioId, varianteId },
     });
   }
 
   async vaciarCarrito(usuarioId: number) {
     return this.prisma.itemCarrito.deleteMany({ where: { usuarioId } });
+  }
+
+  private includeCarrito() {
+    return {
+      producto: {
+        include: {
+          categoria: { select: { id: true, nombre: true, slug: true } },
+          imagenes: { where: { principal: true }, take: 1 },
+        },
+      },
+      variante: {
+        include: {
+          color: true,
+          size: true,
+          imagenes: true,
+        },
+      },
+    };
   }
 }
 
@@ -171,6 +225,16 @@ export class UsuariosController {
   @Get()
   listar(@Query() params: ListarUsuariosDto) {
     return this.usuariosService.listar(params);
+  }
+
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles('ADMIN', 'GERENTE', 'OPERADOR')
+  @Patch(':id/activo')
+  actualizarEstadoUsuario(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() body: { activo: boolean }
+  ) {
+    return this.usuariosService.actualizarEstadoUsuario(id, body.activo);
   }
 
   @Patch('perfil')
@@ -216,7 +280,7 @@ export class UsuariosController {
   }
 
   @Post('direcciones')
-  agregarDireccion(@Request() req, @Body() datos: any) {
+  agregarDireccion(@Request() req, @Body() datos: DireccionUsuarioDto) {
     return this.usuariosService.agregarDireccion(req.user.id, datos);
   }
 
@@ -224,7 +288,7 @@ export class UsuariosController {
   actualizarDireccion(
     @Request() req,
     @Param('direccionId', ParseIntPipe) direccionId: number,
-    @Body() datos: any
+    @Body() datos: DireccionUsuarioDto
   ) {
     return this.usuariosService.actualizarDireccion(req.user.id, direccionId, datos);
   }

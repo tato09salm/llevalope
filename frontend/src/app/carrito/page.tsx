@@ -4,32 +4,36 @@ import { useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, Tag, Truck } from 'lucide-react';
+import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, Truck, ShieldCheck } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import { useCarritoStore } from '../../store/carrito.store';
+import { calcularResumenLocal } from '../../lib/commerce';
 
 export default function CarritoPage() {
   const { items, subtotal, actualizarCantidad, quitar, vaciar } = useCarritoStore();
-  const [cupon, setCupon] = useState('');
-  const [descuento, setDescuento] = useState(0);
+  const [procesando, setProcesando] = useState<number | null>(null);
 
   const formatPrecio = (p: number) =>
     new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(p);
 
-  const costoEnvio = subtotal >= 149 ? 0 : 10;
-  const igv = subtotal * 0.18;
-  const total = subtotal + costoEnvio + igv - descuento;
+  const resumen = calcularResumenLocal(items);
 
-  const aplicarCupon = () => {
-    const cupones: Record<string, number> = {
-      BIENVENIDO10: subtotal * 0.1,
-      LLEVA20: 20,
-      CYBER30: subtotal * 0.3,
-    };
-    const desc = cupones[cupon.toUpperCase()];
-    if (desc) {
-      setDescuento(desc);
+  const cambiarCantidad = async (varianteId: number, cantidad: number) => {
+    setProcesando(varianteId);
+    try {
+      await actualizarCantidad(varianteId, cantidad);
+    } finally {
+      setProcesando(null);
+    }
+  };
+
+  const eliminarItem = async (varianteId: number) => {
+    setProcesando(varianteId);
+    try {
+      await quitar(varianteId);
+    } finally {
+      setProcesando(null);
     }
   };
 
@@ -110,7 +114,8 @@ export default function CarritoPage() {
                       {/* Cantidad */}
                       <div className="flex items-center gap-2 bg-crema rounded-lg p-1">
                         <button
-                          onClick={() => actualizarCantidad(variante.id, cantidad - 1)}
+                          onClick={() => cambiarCantidad(variante.id, cantidad - 1)}
+                          disabled={procesando === variante.id}
                           className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors"
                         >
                           <Minus size={14} />
@@ -119,8 +124,8 @@ export default function CarritoPage() {
                           {cantidad}
                         </span>
                         <button
-                          onClick={() => actualizarCantidad(variante.id, cantidad + 1)}
-                          disabled={cantidad >= variante.stock}
+                          onClick={() => cambiarCantidad(variante.id, cantidad + 1)}
+                          disabled={cantidad >= variante.stock || procesando === variante.id}
                           className="w-8 h-8 rounded-lg bg-white shadow-sm flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-40"
                         >
                           <Plus size={14} />
@@ -133,7 +138,7 @@ export default function CarritoPage() {
                           {formatPrecio(Number(variante.enOferta && variante.precioOferta ? variante.precioOferta : variante.precioBase) * cantidad)}
                         </p>
                         <button
-                          onClick={() => quitar(variante.id)}
+                          onClick={() => eliminarItem(variante.id)}
                           className="text-red-400 hover:text-red-600 transition-colors p-1"
                           title="Eliminar"
                         >
@@ -146,28 +151,16 @@ export default function CarritoPage() {
               ))}
             </AnimatePresence>
 
-            {/* Cupón */}
             <div className="bg-white rounded-2xl shadow-card p-5">
               <h3 className="font-semibold text-azul-oscuro mb-3 flex items-center gap-2">
-                <Tag size={16} className="text-dorado" /> Código de Descuento
+                <ShieldCheck size={16} className="text-dorado" /> Beneficios del checkout
               </h3>
-              <div className="flex gap-3">
-                <input
-                  type="text"
-                  value={cupon}
-                  onChange={(e) => setCupon(e.target.value.toUpperCase())}
-                  placeholder="Ej: BIENVENIDO10"
-                  className="input-campo flex-1"
-                />
-                <button onClick={aplicarCupon} className="btn-secundario px-6">
-                  Aplicar
-                </button>
+              <div className="space-y-2 text-sm text-gris-elegante">
+                <p>Envio gratis en compras desde {formatPrecio(resumen.umbralEnvioGratis)}.</p>
+                <p>IGV incluido en los precios mostrados.</p>
+                <p>5% de descuento por volumen al llevar 3 o mas unidades de la misma variante.</p>
+                <p>Cupones y envio express se validan en el checkout antes de confirmar.</p>
               </div>
-              {descuento > 0 && (
-                <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-green-600 text-sm mt-2 font-medium">
-                  ✅ Descuento aplicado: {formatPrecio(descuento)}
-                </motion.p>
-              )}
             </div>
           </div>
 
@@ -180,39 +173,41 @@ export default function CarritoPage() {
 
               <div className="space-y-3 mb-5">
                 <div className="flex justify-between text-sm">
-                  <span className="text-gris-elegante">Subtotal</span>
-                  <span className="font-medium">{formatPrecio(subtotal)}</span>
+                  <span className="text-gris-elegante">Subtotal productos</span>
+                  <span className="font-medium">{formatPrecio(resumen.subtotalOriginal)}</span>
                 </div>
-                {descuento > 0 && (
-                  <div className="flex justify-between text-sm text-green-600">
-                    <span>Descuento (cupón)</span>
-                    <span>-{formatPrecio(descuento)}</span>
-                  </div>
-                )}
+                <div className="flex justify-between text-sm text-green-700">
+                  <span>Descuento por volumen</span>
+                  <span>-{formatPrecio(resumen.descuentoVolumen)}</span>
+                </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gris-elegante flex items-center gap-1">
                     <Truck size={14} /> Envío
                   </span>
-                  <span className={costoEnvio === 0 ? 'text-green-600 font-medium' : 'font-medium'}>
-                    {costoEnvio === 0 ? 'GRATIS' : formatPrecio(costoEnvio)}
+                  <span className={resumen.costoEnvio === 0 ? 'text-green-600 font-medium' : 'font-medium'}>
+                    {resumen.costoEnvio === 0 ? 'GRATIS' : formatPrecio(resumen.costoEnvio)}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-gris-elegante">IGV (18%)</span>
-                  <span className="font-medium">{formatPrecio(igv)}</span>
+                  <span className="text-gris-elegante">IGV incluido (18%)</span>
+                  <span className="font-medium">{formatPrecio(resumen.igvIncluido)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gris-elegante">Ahorro acumulado</span>
+                  <span className="font-medium text-green-700">{formatPrecio(resumen.ahorroTotal)}</span>
                 </div>
                 <div className="border-t border-gray-100 pt-3">
                   <div className="flex justify-between">
                     <span className="font-bold text-azul-oscuro">Total</span>
-                    <span className="font-bold text-xl text-azul-oscuro">{formatPrecio(total)}</span>
+                    <span className="font-bold text-xl text-azul-oscuro">{formatPrecio(resumen.total)}</span>
                   </div>
                 </div>
               </div>
 
-              {costoEnvio > 0 && (
+              {resumen.faltanteEnvioGratis > 0 && (
                 <div className="bg-dorado bg-opacity-10 border border-dorado border-opacity-30 rounded-xl p-3 mb-5">
                   <p className="text-xs text-azul-oscuro">
-                    💡 Agrega <strong>{formatPrecio(149 - subtotal)}</strong> más para envío gratis
+                    Agrega <strong>{formatPrecio(resumen.faltanteEnvioGratis)}</strong> mas para envio gratis
                   </p>
                 </div>
               )}
@@ -225,7 +220,6 @@ export default function CarritoPage() {
               </Link>
 
               <div className="flex items-center justify-center gap-2 mt-4 text-xs text-gris-elegante">
-                <span>🔒</span>
                 <span>Pago 100% seguro y encriptado</span>
               </div>
 

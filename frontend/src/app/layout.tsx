@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Poppins, Montserrat } from 'next/font/google';
 import '../styles/globals.css';
 import { Toaster } from 'react-hot-toast';
+import AppBootstrap from '../components/providers/AppBootstrap';
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -32,6 +33,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="es" className={`${poppins.variable} ${montserrat.variable}`}>
       <body className="font-poppins bg-crema">
+        <AppBootstrap />
         {children}
         <Toaster
           position="top-right"

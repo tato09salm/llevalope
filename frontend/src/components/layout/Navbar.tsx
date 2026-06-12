@@ -151,6 +151,9 @@ export default function Navbar() {
                     <Link href="/cuenta/pedidos" className="flex items-center gap-3 px-4 py-2.5 text-azul-oscuro hover:bg-crema text-sm transition-colors">
                       <ShoppingCart size={15} /> Mis Pedidos
                     </Link>
+                    <Link href="/cuenta/soporte" className="flex items-center gap-3 px-4 py-2.5 text-azul-oscuro hover:bg-crema text-sm transition-colors">
+                      <Bell size={15} /> Mi Soporte
+                    </Link>
                     <Link href="/cuenta/wishlist" className="flex items-center gap-3 px-4 py-2.5 text-azul-oscuro hover:bg-crema text-sm transition-colors">
                       <Heart size={15} /> Lista de Deseos
                     </Link>

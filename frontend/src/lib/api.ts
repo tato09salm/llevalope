@@ -106,6 +106,7 @@ export const sizesAPI = {
 
 export const pedidosAPI = {
   crear: (datos: any) => post('/pedidos', datos),
+  previewCheckout: (datos: any) => post('/pedidos/checkout-preview', datos),
   listarMios: () => get('/pedidos/mis-pedidos'),
   obtener: (id: number) => get(`/pedidos/${id}`),
   listarAdmin: (params?: any) => get('/pedidos/admin', { params }),
@@ -113,12 +114,20 @@ export const pedidosAPI = {
 };
 
 export const usuariosAPI = {
-  listar: () => get('/usuarios'),
+  listar: (params?: any) => get('/usuarios', { params }),
+  actualizarEstado: (id: number, activo: boolean) => patch(`/usuarios/${id}/activo`, { activo }),
   actualizarPerfil: (datos: any) => patch('/usuarios/perfil', datos),
   obtenerCarrito: () => get('/usuarios/carrito'),
   agregarCarrito: (productoId: number, varianteId: number, cantidad = 1) =>
     patch('/usuarios/carrito', { productoId, varianteId, cantidad }),
+  actualizarCantidadCarrito: (varianteId: number, cantidad: number) =>
+    put(`/usuarios/carrito/${varianteId}`, { cantidad }),
+  eliminarDelCarrito: (varianteId: number) => del(`/usuarios/carrito/${varianteId}`),
+  vaciarCarrito: () => del('/usuarios/carrito'),
   listarDirecciones: () => get('/usuarios/direcciones'),
+  crearDireccion: (datos: any) => post('/usuarios/direcciones', datos),
+  actualizarDireccion: (id: number, datos: any) => put(`/usuarios/direcciones/${id}`, datos),
+  eliminarDireccion: (id: number) => del(`/usuarios/direcciones/${id}`),
 };
 
 export const proveedoresAPI = {
@@ -139,6 +148,7 @@ export const soporteAPI = {
   crearTicket: (datos: any) => post('/soporte/tickets', datos),
   misTickets: () => get('/soporte/mis-tickets'),
   listarAdmin: () => get('/soporte/admin/tickets'),
+  obtener: (id: number) => get(`/soporte/tickets/${id}`),
   responder: (id: number, mensaje: string) =>
     post(`/soporte/tickets/${id}/responder`, { mensaje }),
   actualizarEstado: (id: number, estado: string) =>

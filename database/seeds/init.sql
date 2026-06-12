@@ -1,5 +1,5 @@
 -- =============================================
--- LlevaloPe - Inicialización de Base de Datos
+-- LlevaloPe - Inicializacion de Base de Datos
 -- PostgreSQL
 -- =============================================
 
@@ -192,6 +192,19 @@ CREATE TABLE items_carrito (
 );
 
 -- ========================
+-- TABLA: reservas_stock
+-- ========================
+CREATE TABLE reservas_stock (
+    id SERIAL PRIMARY KEY,
+    usuario_id INTEGER NOT NULL REFERENCES usuarios(id) ON DELETE CASCADE,
+    variante_id INTEGER NOT NULL REFERENCES variantes_producto(id) ON DELETE CASCADE,
+    cantidad INTEGER NOT NULL,
+    checkout_token VARCHAR(100) NOT NULL,
+    expira_en TIMESTAMP NOT NULL,
+    creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- ========================
 -- TABLA: items_wishlist
 -- ========================
 CREATE TABLE items_wishlist (
@@ -222,8 +235,11 @@ CREATE TABLE pedidos (
     fecha_entrega_est TIMESTAMP,
     fecha_entrega TIMESTAMP,
     tracking_code VARCHAR(100),
+    tipo_envio VARCHAR(20) DEFAULT 'STANDARD',
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    descuento_volumen DECIMAL(10,2) DEFAULT 0,
+    ahorro_total DECIMAL(10,2) DEFAULT 0
 );
 
 -- ========================
@@ -278,7 +294,7 @@ CREATE TABLE proveedores (
     correo VARCHAR(255),
     telefono VARCHAR(20),
     direccion VARCHAR(500),
-    pais VARCHAR(100) DEFAULT 'Perú',
+    pais VARCHAR(100) DEFAULT 'Peru',
     activo BOOLEAN DEFAULT true,
     calificacion DECIMAL(3,2) DEFAULT 5,
     notas TEXT,
@@ -404,7 +420,9 @@ CREATE TABLE cupones (
     max_usos INTEGER,
     activo BOOLEAN DEFAULT true,
     fecha_inicio TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    fecha_fin TIMESTAMP
+    fecha_fin TIMESTAMP,
+    productos_aplicables JSONB,
+    categorias_aplicables JSONB
 );
 
 -- ========================
@@ -483,13 +501,18 @@ CREATE TABLE auditoria_log (
 -- Agregar columnas nuevas a tablas existentes
 ALTER TABLE pedidos
     ADD COLUMN IF NOT EXISTS cupon_id INTEGER REFERENCES cupones(id),
-    ADD COLUMN IF NOT EXISTS descuento_cupon DECIMAL(10,2) DEFAULT 0;
+    ADD COLUMN IF NOT EXISTS descuento_cupon DECIMAL(10,2) DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS descuento_volumen DECIMAL(10,2) DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS ahorro_total DECIMAL(10,2) DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS tipo_envio VARCHAR(20) DEFAULT 'STANDARD';
 
 ALTER TABLE cupones
-    ADD COLUMN IF NOT EXISTS max_usos_por_usuario INTEGER DEFAULT 1;
+    ADD COLUMN IF NOT EXISTS max_usos_por_usuario INTEGER DEFAULT 1,
+    ADD COLUMN IF NOT EXISTS productos_aplicables JSONB,
+    ADD COLUMN IF NOT EXISTS categorias_aplicables JSONB;
 
 -- ========================
--- ÍNDICES
+-- INDICES
 -- ========================
 CREATE INDEX idx_productos_categoria ON productos(categoria_id);
 CREATE INDEX idx_productos_slug ON productos(slug);
@@ -501,8 +524,11 @@ CREATE INDEX idx_variantes_producto_en_oferta ON variantes_producto(en_oferta);
 CREATE INDEX idx_pedidos_usuario ON pedidos(usuario_id);
 CREATE INDEX idx_pedidos_estado ON pedidos(estado);
 CREATE INDEX idx_items_carrito_usuario ON items_carrito(usuario_id);
+CREATE INDEX idx_reservas_stock_usuario_expira ON reservas_stock(usuario_id, expira_en);
+CREATE INDEX idx_reservas_stock_variante_expira ON reservas_stock(variante_id, expira_en);
+CREATE INDEX idx_reservas_stock_token ON reservas_stock(checkout_token);
 CREATE INDEX idx_notificaciones_usuario ON notificaciones(usuario_id, leida);
--- Índices nuevos
+-- Indices nuevos
 CREATE INDEX idx_pagos_pedido_pedido ON pagos_pedido(pedido_id);
 CREATE INDEX idx_pagos_pedido_referencia ON pagos_pedido(referencia_pago);
 CREATE INDEX idx_historial_envio_envio ON historial_envio(envio_pedido_id);
@@ -514,22 +540,22 @@ CREATE INDEX idx_cupones_pedido_pedido ON cupones_pedido(pedido_id);
 -- DATOS INICIALES (SEMILLAS)
 -- ========================
 
--- Usuario Administrador (contraseña: Admin123!)
+-- Usuario Administrador (contrasena: Admin123!)
 INSERT INTO usuarios (nombre, apellido, correo, contrasena, rol, verificado) VALUES
-('Admin', 'LlevaloPe', 'admin@llevalope.pe', '$2b$10$QgnHUBHCP/9aOSNeXyOdaeSk4gK26v5EAO7pZ0QtI0JICBJJEb9SO', 'ADMIN', true),
-('María', 'González', 'maria@ejemplo.com', '$2b$10$QgnHUBHCP/9aOSNeXyOdaeSk4gK26v5EAO7pZ0QtI0JICBJJEb9SO', 'CLIENTE', true),
-('Carlos', 'Quispe', 'carlos@ejemplo.com', '$2b$10$QgnHUBHCP/9aOSNeXyOdaeSk4gK26v5EAO7pZ0QtI0JICBJJEb9SO', 'CLIENTE', true);
+('Admin', 'LlevaloPe', 'admin@llevalope.pe', '$2b$10$iTLDkGGDsj2xcsbwtUIATO7NxE3w1Pk0znxBuwdywMz4gMOnV4L12', 'ADMIN', true),
+('Maria', 'Gonzalez', 'maria@ejemplo.com', '$2b$10$iTLDkGGDsj2xcsbwtUIATO7NxE3w1Pk0znxBuwdywMz4gMOnV4L12', 'CLIENTE', true),
+('Carlos', 'Quispe', 'carlos@ejemplo.com', '$2b$10$iTLDkGGDsj2xcsbwtUIATO7NxE3w1Pk0znxBuwdywMz4gMOnV4L12', 'CLIENTE', true);
 
--- Categorías principales
+-- Categorias principales
 INSERT INTO categorias (nombre, slug, descripcion, icono, orden) VALUES
-('Tecnología', 'tecnologia', 'Electrónica, gadgets y más', '💻', 1),
-('Hogar y Muebles', 'hogar', 'Todo para tu hogar', '🏠', 2),
-('Moda', 'moda', 'Ropa y accesorios', '👗', 3),
-('Belleza y Cuidado', 'belleza', 'Cosméticos y cuidado personal', '💄', 4),
-('Deportes', 'deportes', 'Equipos y ropa deportiva', '⚽', 5),
-('Alimentos', 'alimentos', 'Abarrotes y comida', '🛒', 6),
-('Juguetes', 'juguetes', 'Para los más pequeños', '🧸', 7),
-('Libros', 'libros', 'Libros y material educativo', '📚', 8);
+('Tecnologia', 'tecnologia', 'Electronica, gadgets y mas', 'laptop', 1),
+('Hogar y Muebles', 'hogar', 'Todo para tu hogar', 'home', 2),
+('Moda', 'moda', 'Ropa y accesorios', 'fashion', 3),
+('Belleza y Cuidado', 'belleza', 'Cosmeticos y cuidado personal', 'beauty', 4),
+('Deportes', 'deportes', 'Equipos y ropa deportiva', 'sports', 5),
+('Alimentos', 'alimentos', 'Abarrotes y comida', 'cart', 6),
+('Juguetes', 'juguetes', 'Para los mas pequenos', 'toy', 7),
+('Libros', 'libros', 'Libros y material educativo', 'books', 8);
 
 -- Marcas
 INSERT INTO marcas (nombre, slug) VALUES
@@ -553,20 +579,20 @@ INSERT INTO tallas_colecciones (nombre, orden, activo) VALUES
 ('Unico', 1, true);
 
 INSERT INTO tallas (nombre, orden, activo, coleccion_id) VALUES
-('Talla Única', 1, true, 1);
+('Talla Unica', 1, true, 1);
 
 -- Productos de ejemplo
 INSERT INTO productos (nombre, slug, descripcion_corta, categoria_id, marca_id, activo, destacado, calificacion, total_resenas, total_ventas, imagen_principal) VALUES
-('Audífonos Inalámbricos Sony WH-1000XM5', 'audifonos-sony-wh1000xm5', 'Cancelación de ruido líder en la industria', 1, 3, true, true, 4.8, 128, 342, 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=1200'),
+('Audifonos Inalambricos Sony WH-1000XM5', 'audifonos-sony-wh1000xm5', 'Cancelacion de ruido lider en la industria', 1, 3, true, true, 4.8, 128, 342, 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=1200'),
 ('Smartwatch Pro Series 8', 'smartwatch-pro-series-8', 'Monitor de salud avanzado y GPS', 1, 1, true, true, 4.6, 96, 215, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200'),
 ('Mochila Urbana Premium', 'mochila-urbana-premium', 'Resistente al agua, compartimento laptop 15\"', 3, 9, true, false, 4.5, 74, 189, 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1200'),
 ('Perfume Elegance Pour Femme', 'perfume-elegance-pour-femme', '50ml - Fragancia floral y fresca', 4, 9, true, true, 4.7, 53, 167, 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=1200'),
 ('Laptop Lenovo IdeaPad 5i', 'laptop-lenovo-ideapad-5i', 'Intel Core i7, 16GB RAM, 512GB SSD', 1, 4, true, true, 4.7, 62, 120, 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=1200'),
-('Smart TV LG 55\" 4K OLED', 'smart-tv-lg-55-4k-oled', 'Resolución 4K, HDR Dolby Vision, WebOS', 1, 6, true, true, 4.9, 41, 95, 'https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?w=1200'),
-('Zapatillas Nike Air Max 270', 'zapatillas-nike-air-max-270', 'Comodidad extrema para el día a día', 5, 7, true, false, 4.5, 89, 210, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200'),
-('Cafetera Espresso DeLonghi', 'cafetera-espresso-delonghi', 'Presión 15 bar, espumador de leche', 2, 9, true, false, 4.6, 37, 80, 'https://images.unsplash.com/photo-1509460913899-515f1df34fea?w=1200');
+('Smart TV LG 55\" 4K OLED', 'smart-tv-lg-55-4k-oled', 'Resolucion 4K, HDR Dolby Vision, WebOS', 1, 6, true, true, 4.9, 41, 95, 'https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?w=1200'),
+('Zapatillas Nike Air Max 270', 'zapatillas-nike-air-max-270', 'Comodidad extrema para el dia a dia', 5, 7, true, false, 4.5, 89, 210, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200'),
+('Cafetera Espresso DeLonghi', 'cafetera-espresso-delonghi', 'Presion 15 bar, espumador de leche', 2, 9, true, false, 4.6, 37, 80, 'https://images.unsplash.com/photo-1509460913899-515f1df34fea?w=1200');
 
--- Variantes (1 por producto para que el catálogo muestre precio y stock)
+-- Variantes (1 por producto para que el catalogo muestre precio y stock)
 INSERT INTO variantes_producto (
   producto_id, color_id, size_id, sku,
   precio_base, precio_oferta, porcentaje_descuento,
@@ -581,9 +607,9 @@ INSERT INTO variantes_producto (
 (7, 1, 1, 'NIK-ZAP-001', 599.90, 469.90, 22, 120, 10, true, true, true, 0),
 (8, 1, 1, 'CAF-DEL-001', 899.90, NULL, 0, 28, 5, false, true, true, 0);
 
--- Imágenes (para que el detalle del producto muestre galería)
+-- Imagenes (para que el detalle del producto muestre galeria)
 INSERT INTO imagenes_producto (producto_id, url, alt, orden, principal) VALUES
-(1, 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=1200', 'Audífonos Inalámbricos Sony WH-1000XM5', 0, true),
+(1, 'https://images.unsplash.com/photo-1618366712010-f4ae9c647dcb?w=1200', 'Audifonos Inalambricos Sony WH-1000XM5', 0, true),
 (2, 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=1200', 'Smartwatch Pro Series 8', 0, true),
 (3, 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=1200', 'Mochila Urbana Premium', 0, true),
 (4, 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=1200', 'Perfume Elegance Pour Femme', 0, true),
@@ -594,23 +620,23 @@ INSERT INTO imagenes_producto (producto_id, url, alt, orden, principal) VALUES
 
 -- Proveedores
 INSERT INTO proveedores (nombre, ruc, contacto, correo, telefono, pais) VALUES
-('Tech Importaciones SAC', '20123456789', 'Juan Rodríguez', 'ventas@techimport.pe', '01-2345678', 'Perú'),
-('Distribuidora Andina EIRL', '20987654321', 'Ana López', 'ana@distribandina.pe', '01-8765432', 'Perú'),
+('Tech Importaciones SAC', '20123456789', 'Juan Rodriguez', 'ventas@techimport.pe', '01-2345678', 'Peru'),
+('Distribuidora Andina EIRL', '20987654321', 'Ana Lopez', 'ana@distribandina.pe', '01-8765432', 'Peru'),
 ('Global Supply Co.', '20555555555', 'Roberto Chen', 'rchen@globalsupply.com', '+1-555-0100', 'USA');
 
 -- Banners
 INSERT INTO banners (titulo, subtitulo, imagen, enlace, orden) VALUES
-('Ofertas de Temporada', 'Hasta 50% de descuento en tecnología', '/imagenes/banners/banner-tecnologia.jpg', '/productos?categoria=tecnologia&oferta=true', 1),
-('Envíos Gratis', 'En compras mayores a S/ 149', '/imagenes/banners/banner-envio.jpg', '/productos', 2),
-('Nuevos Arrivals', 'Lo último en moda y accesorios', '/imagenes/banners/banner-moda.jpg', '/productos?categoria=moda', 3);
+('Ofertas de Temporada', 'Hasta 50% de descuento en tecnologia', '/imagenes/banners/banner-tecnologia.jpg', '/productos?categoria=tecnologia&enOferta=true', 1),
+('Envios Gratis', 'En compras mayores a S/ 199', '/imagenes/banners/banner-envio.jpg', '/productos', 2),
+('Nuevos Arrivals', 'Lo ultimo en moda y accesorios', '/imagenes/banners/banner-moda.jpg', '/productos?categoria=moda', 3);
 
 -- Cupones de ejemplo
 INSERT INTO cupones (codigo, descripcion, tipo, valor, min_compra, max_usos, fecha_fin) VALUES
-('BIENVENIDO10', '10% de descuento para nuevos usuarios', 'PORCENTAJE', 10, 100, 1000, '2025-12-31'),
-('LLEVA20', 'S/ 20 de descuento en tu compra', 'MONTO_FIJO', 20, 150, 500, '2025-06-30'),
-('CYBER30', '30% de descuento - Cyber Monday', 'PORCENTAJE', 30, 200, 200, '2025-06-15');
+('BIENVENIDO10', '10% de descuento para nuevos usuarios', 'PORCENTAJE', 10, 100, 1000, '2027-12-31'),
+('LLEVA20', 'S/ 20 de descuento en tu compra', 'MONTO_FIJO', 20, 150, 500, '2027-12-31'),
+('CYBER30', '30% de descuento - Cyber Monday', 'PORCENTAJE', 30, 200, 200, '2027-12-31');
 
--- Función para actualizar timestamp
+-- Funcion para actualizar timestamp
 CREATE OR REPLACE FUNCTION actualizar_timestamp()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -624,4 +650,4 @@ CREATE TRIGGER trigger_usuarios_timestamp BEFORE UPDATE ON usuarios FOR EACH ROW
 CREATE TRIGGER trigger_productos_timestamp BEFORE UPDATE ON productos FOR EACH ROW EXECUTE PROCEDURE actualizar_timestamp();
 CREATE TRIGGER trigger_pedidos_timestamp BEFORE UPDATE ON pedidos FOR EACH ROW EXECUTE PROCEDURE actualizar_timestamp();
 
-SELECT 'Base de datos LlevaloPe inicializada correctamente ✅' AS mensaje;
+SELECT 'Base de datos LlevaloPe inicializada correctamente' AS mensaje;

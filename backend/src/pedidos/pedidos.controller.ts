@@ -6,7 +6,7 @@ import { PedidosService } from './pedidos.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { ActualizarEstadoPedidoDto, CrearPedidoDto, ListarPedidosAdminDto } from './dto/pedidos.dto';
+import { ActualizarEstadoPedidoDto, CrearPedidoDto, ListarPedidosAdminDto, PreviewCheckoutDto } from './dto/pedidos.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('pedidos')
@@ -16,6 +16,11 @@ export class PedidosController {
   @Post()
   crear(@Request() req, @Body() datos: CrearPedidoDto) {
     return this.pedidosService.crearPedido(req.user.id, datos);
+  }
+
+  @Post('checkout-preview')
+  preview(@Request() req, @Body() datos: PreviewCheckoutDto) {
+    return this.pedidosService.previewCheckout(req.user.id, datos);
   }
 
   @Get('mis-pedidos')

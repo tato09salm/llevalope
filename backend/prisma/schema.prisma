@@ -37,6 +37,7 @@ model Usuario {
   notificaciones Notificacion[]
   carrito       ItemCarrito[]
   auditorias     AuditoriaLog[]  //
+  reservasStock  ReservaStock[]
 
   @@map("usuarios")
 }
@@ -167,6 +168,7 @@ model VarianteProducto {
   itemsCarrito        ItemCarrito[]
   movimientosInventario MovimientoInventario[]
   itemsOrdenCompra    ItemOrdenCompra[]
+  reservasStock       ReservaStock[]
 
   @@map("variantes_producto")
 }
@@ -247,6 +249,24 @@ model ItemCarrito {
   @@map("items_carrito")
 }
 
+model ReservaStock {
+  id           Int              @id @default(autoincrement())
+  usuarioId    Int              @map("usuario_id")
+  varianteId   Int              @map("variante_id")
+  cantidad     Int
+  checkoutToken String          @db.VarChar(100) @map("checkout_token")
+  expiraEn     DateTime         @map("expira_en")
+  creadoEn     DateTime         @default(now()) @map("creado_en")
+
+  usuario      Usuario          @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  variante     VarianteProducto @relation(fields: [varianteId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId, expiraEn])
+  @@index([varianteId, expiraEn])
+  @@index([checkoutToken])
+  @@map("reservas_stock")
+}
+
 model ItemWishlist {
   id          Int      @id @default(autoincrement())
   usuarioId   Int      @map("usuario_id")
@@ -285,6 +305,9 @@ model Pedido {
   actualizadoEn   DateTime @updatedAt @map("actualizado_en")
   cuponId         Int?     @map("cupon_id")                
   descuentoCupon  Decimal  @default(0) @db.Decimal(10,2) @map("descuento_cupon")  
+  descuentoVolumen Decimal @default(0) @db.Decimal(10,2) @map("descuento_volumen")
+  ahorroTotal     Decimal  @default(0) @db.Decimal(10,2) @map("ahorro_total")
+  tipoEnvio       String   @default("STANDARD") @db.VarChar(20) @map("tipo_envio")
 
 
   usuario         Usuario          @relation(fields: [usuarioId], references: [id])
@@ -635,6 +658,8 @@ model Cupon {
   activo        Boolean  @default(true)
   fechaInicio   DateTime @default(now()) @map("fecha_inicio")
   fechaFin      DateTime? @map("fecha_fin")
+  productosAplicables Json? @map("productos_aplicables")
+  categoriasAplicables Json? @map("categorias_aplicables")
 
   pedidos       Pedido[]
   cuponesPedido CuponPedido[]

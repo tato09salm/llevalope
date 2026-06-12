@@ -144,6 +144,7 @@ export interface DireccionUsuario {
   direccion: string;
   referencia?: string;
   predeterminada: boolean;
+  creadoEn?: string;
 }
 
 export type EstadoPedido =
@@ -167,26 +168,81 @@ export interface Pedido {
   estado: EstadoPedido;
   subtotal: number;
   descuento: number;
+  descuentoCupon?: number;
+  descuentoVolumen?: number;
   costoEnvio: number;
   impuestos: number;
   total: number;
+  ahorroTotal?: number;
+  tipoEnvio?: 'STANDARD' | 'EXPRESS';
   metodoPago: MetodoPago;
   estadoPago: 'PENDIENTE' | 'PAGADO' | 'FALLIDO' | 'REEMBOLSADO';
   notas?: string;
   items: ItemPedido[];
   historial?: HistorialPedido[];
   envio?: EnvioPedido;
+  cupon?: { codigo: string; descripcion?: string };
   creadoEn: string;
 }
 
 export interface ItemPedido {
   id: number;
+  varianteId?: number;
   productoId: number;
   nombre: string;
   cantidad: number;
   precioUnit: number;
   subtotal: number;
   imagen?: string;
+  producto?: Producto;
+  variante?: VarianteProducto;
+}
+
+export interface CheckoutPreviewItem {
+  productoId: number;
+  categoriaId: number;
+  varianteId: number;
+  nombre: string;
+  sku: string;
+  cantidad: number;
+  imagen?: string;
+  precioBase: number;
+  precioUnitario: number;
+  subtotalOriginal: number;
+  descuentoOferta: number;
+  descuentoVolumen: number;
+  subtotalFinal: number;
+  stockDisponible: number;
+}
+
+export interface CheckoutResumen {
+  subtotalOriginal: number;
+  subtotalProductos: number;
+  descuentoOferta: number;
+  descuentoVolumen: number;
+  descuentoCupon: number;
+  costoEnvio: number;
+  envioGratis: boolean;
+  igvIncluido: number;
+  total: number;
+  ahorroTotal: number;
+  tipoEnvio: 'STANDARD' | 'EXPRESS';
+  umbralEnvioGratis: number;
+  faltanteEnvioGratis: number;
+}
+
+export interface CheckoutPreview {
+  items: CheckoutPreviewItem[];
+  resumen: CheckoutResumen;
+  cupon: null | {
+    id: number;
+    codigo: string;
+    tipo: 'PORCENTAJE' | 'MONTO_FIJO';
+    valor: number;
+    descuento: number;
+  };
+  checkoutToken?: string;
+  reservaExpiraEn?: string;
 }
 
 export interface HistorialPedido {
@@ -224,6 +280,69 @@ export interface Proveedor {
   pais: string;
   activo: boolean;
   calificacion: number;
+}
+
+export interface MovimientoInventario {
+  id: number;
+  productoId: number;
+  varianteId: number;
+  tipo: 'ENTRADA' | 'SALIDA' | 'AJUSTE' | 'DEVOLUCION';
+  cantidad: number;
+  stockAnterior: number;
+  stockNuevo: number;
+  motivo: string;
+  referencia?: string;
+  creadoEn: string;
+  variante?: {
+    sku: string;
+    producto?: {
+      nombre: string;
+    };
+  };
+}
+
+export interface OrdenCompraItem {
+  id: number;
+  productoId: number;
+  varianteId: number;
+  cantidadPedida: number;
+  precioUnit: number;
+  subtotal: number;
+}
+
+export interface OrdenCompra {
+  id: number;
+  numeroOrden: string;
+  proveedorId: number;
+  estado?: string;
+  subtotal: number;
+  total: number;
+  notas?: string;
+  creadoEn: string;
+  proveedor?: {
+    nombre: string;
+  };
+  items: OrdenCompraItem[];
+}
+
+export interface TicketMensaje {
+  id: number;
+  mensaje: string;
+  esAgente: boolean;
+  creadoEn: string;
+}
+
+export interface TicketSoporte {
+  id: number;
+  usuarioId: number;
+  asunto: string;
+  descripcion: string;
+  categoria: string;
+  prioridad: string;
+  estado: string;
+  creadoEn: string;
+  usuario?: Pick<Usuario, 'id' | 'nombre' | 'apellido' | 'correo' | 'telefono'>;
+  mensajes?: TicketMensaje[];
 }
 
 export interface PaginatedResponse<T> {
