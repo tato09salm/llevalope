@@ -7,6 +7,7 @@ import { Filter, SlidersHorizontal, Grid, List, Search, X, Loader2, ChevronLeft,
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import CardProducto from '../../components/productos/CardProducto';
+import CardProductoList from '../../components/productos/CardProductoList';
 import { productosAPI, categoriasAPI } from '../../lib/api';
 import { Producto, Categoria } from '../../types';
 
@@ -358,7 +359,7 @@ function ProductosContent() {
               </div>
             ) : (
               <>
-                <div className={`grid gap-4 ${vistaLista ? 'grid-cols-1' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4'}`}>
+                <div className={`${vistaLista ? 'space-y-4' : 'grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4'}`}>
                   {productos.map((producto, i) => (
                     <motion.div
                       key={producto.id}
@@ -366,7 +367,11 @@ function ProductosContent() {
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.04 }}
                     >
-                      <CardProducto producto={producto} />
+                      {vistaLista ? (
+                        <CardProductoList producto={producto} />
+                      ) : (
+                        <CardProducto producto={producto} />
+                      )}
                     </motion.div>
                   ))}
                 </div>

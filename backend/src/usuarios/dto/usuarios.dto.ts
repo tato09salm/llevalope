@@ -1,6 +1,31 @@
 import { Type } from 'class-transformer';
 import { IsBoolean, IsInt, IsOptional, IsString, MaxLength, Min } from 'class-validator';
 
+export class ListarUsuariosDto {
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  pagina?: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @IsOptional()
+  limite?: number;
+
+  @IsString()
+  @IsOptional()
+  rol?: string;
+
+  @Type(() => Boolean)
+  @IsBoolean()
+  @IsOptional()
+  activo?: boolean;
+
+  @IsString()
+  @IsOptional()
+  busqueda?: string;
+}
+
 export class ActualizarPerfilDto {
   @IsString()
   @MaxLength(100)

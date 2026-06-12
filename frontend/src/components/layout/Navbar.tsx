@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { useCarritoStore } from '../../store/carrito.store';
 import { useAuthStore } from '../../store/auth.store';
+import { useWishlistStore } from '../../store/wishlist.store';
 import { categoriasAPI } from '../../lib/api';
 import type { Categoria } from '../../types';
 
@@ -18,6 +19,7 @@ export default function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const { totalItems } = useCarritoStore();
+  const { items: wishlistItems } = useWishlistStore();
   const { usuario, cerrarSesion } = useAuthStore();
   const router = useRouter();
 
@@ -120,6 +122,11 @@ export default function Navbar() {
                 title="Lista de deseos"
               >
                 <Heart size={22} />
+                {wishlistItems.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 bg-dorado text-azul-oscuro text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {wishlistItems.length > 99 ? '99+' : wishlistItems.length}
+                  </span>
+                )}
               </Link>
 
               {/* Carrito */}
@@ -147,6 +154,9 @@ export default function Navbar() {
                   <div className="absolute right-0 mt-1 w-52 bg-white rounded-xl shadow-premium opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 py-2 z-50">
                     <Link href="/cuenta" className="flex items-center gap-3 px-4 py-2.5 text-azul-oscuro hover:bg-crema text-sm transition-colors">
                       <User size={15} /> Mi Perfil
+                    </Link>
+                    <Link href="/cuenta/direcciones" className="flex items-center gap-3 px-4 py-2.5 text-azul-oscuro hover:bg-crema text-sm transition-colors">
+                      <MapPin size={15} /> Mis Direcciones
                     </Link>
                     <Link href="/cuenta/pedidos" className="flex items-center gap-3 px-4 py-2.5 text-azul-oscuro hover:bg-crema text-sm transition-colors">
                       <ShoppingCart size={15} /> Mis Pedidos

@@ -23,12 +23,18 @@ export class InventarioService {
   async movimientos(varianteId?: number) {
     const where: any = {};
     if (varianteId) where.varianteId = varianteId;
-    return this.prisma.movimientoInventario.findMany({
+    const movimientos = await this.prisma.movimientoInventario.findMany({
       where,
-      include: { variante: { select: { sku: true, producto: { select: { nombre: true } } } } },
+      include: { variante: { select: { sku: true, producto: { select: { id: true, nombre: true } } } } },
       orderBy: { creadoEn: 'desc' },
       take: 100,
     });
+    
+    // Transformar para que mov.producto exista directamente
+    return movimientos.map(mov => ({
+      ...mov,
+      producto: mov.variante?.producto
+    }));
   }
 
   async ajustarStock(varianteId: number, cantidad: number, motivo: string, tipo: string) {

@@ -73,9 +73,6 @@ export default function IniciarSesionPage() {
             <div>
               <div className="flex justify-between items-center mb-1">
                 <label className="label-campo">Contraseña</label>
-                <Link href="/auth/recuperar" className="text-xs text-teal hover:underline">
-                  ¿Olvidaste tu contraseña?
-                </Link>
               </div>
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-3.5 text-gris-elegante" />

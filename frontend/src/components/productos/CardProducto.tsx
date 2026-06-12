@@ -8,16 +8,22 @@ import { motion } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { Producto, VarianteProducto } from '../../types';
 import { useCarritoStore } from '../../store/carrito.store';
+import { useWishlistStore } from '../../store/wishlist.store';
+import { useAuthStore } from '../../store/auth.store';
+import { useRouter } from 'next/navigation';
 
 interface Props {
   producto: Producto;
 }
 
 export default function CardProducto({ producto }: Props) {
-  const [wishlist, setWishlist] = useState(false);
   const [hoveredVariantId, setHoveredVariantId] = useState<number | null>(null);
   const [isCardHovered, setIsCardHovered] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
   const { agregar } = useCarritoStore();
+  const { items, addToWishlist, removeFromWishlist, isInWishlist } = useWishlistStore();
+  const { usuario } = useAuthStore();
+  const router = useRouter();
 
   // Get all active variants
   const activeVariants = (producto.variantes || []).filter(v => v.activo);
@@ -28,9 +34,9 @@ export default function CardProducto({ producto }: Props) {
   // Get the currently displayed variant (based on hover or card hover)
   const displayedVariant = hoveredVariantId 
     ? activeVariants.find(v => v.id === hoveredVariantId) 
-    : (isCardHovered && activeVariants.length > 1) 
+    : (isCardHovered && activeVariants.length > 1 
       ? activeVariants.find(v => v.id !== mainVariant?.id) 
-      : mainVariant;
+      : mainVariant);
 
   // Get all unique colors from variants
   const variantsByColor = activeVariants.reduce((acc, variant) => {
@@ -50,10 +56,29 @@ export default function CardProducto({ producto }: Props) {
     }
   };
 
-  const toggleWishlist = (e: React.MouseEvent) => {
+  const toggleWishlist = async (e: React.MouseEvent) => {
     e.preventDefault();
-    setWishlist(!wishlist);
-    toast.success(wishlist ? 'Eliminado de favoritos' : '❤️ Agregado a favoritos');
+    
+    if (!usuario) {
+      toast.error('Inicia sesión para guardar productos en tu lista de deseos');
+      router.push('/auth/iniciar-sesion');
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      if (isInWishlist(producto.id)) {
+        await removeFromWishlist(producto.id);
+        toast.success('Producto eliminado de la lista de deseos');
+      } else {
+        await addToWishlist(producto.id);
+        toast.success('❤️ Agregado a la lista de deseos');
+      }
+    } catch (error: any) {
+      toast.error(error.message || 'Error al actualizar la lista de deseos');
+    } finally {
+      setIsUpdating(false);
+    }
   };
 
   const precioFormateado = (precio: number) =>
@@ -134,19 +159,18 @@ export default function CardProducto({ producto }: Props) {
           <div className="absolute top-2 right-2 flex flex-col gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">
             <button
               onClick={toggleWishlist}
+              disabled={isUpdating}
               className={`w-8 h-8 bg-white/95 rounded-full flex items-center justify-center shadow-md transition-all hover:scale-110 ${
-                wishlist
+                isInWishlist(producto.id)
                   ? 'bg-red-500 text-white'
                   : 'text-gray-600 hover:bg-red-50 hover:text-red-500'
               }`}
             >
-              <Heart size={14} fill={wishlist ? 'currentColor' : 'none'} />
+              <Heart size={14} fill={isInWishlist(producto.id) ? 'currentColor' : 'none'} />
             </button>
-            <button
-              className="w-8 h-8 bg-white/95 rounded-full flex items-center justify-center shadow-md text-gray-600 hover:bg-teal hover:text-white transition-all hover:scale-110"
-            >
+            <div className="w-8 h-8 bg-white/95 rounded-full flex items-center justify-center shadow-md text-gray-600 hover:bg-teal hover:text-white transition-all hover:scale-110">
               <Eye size={14} />
-            </button>
+            </div>
           </div>
 
           {/* Color swatches - Mejorados */}

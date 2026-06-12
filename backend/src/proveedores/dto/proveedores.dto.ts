@@ -1,9 +1,10 @@
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import {
   ArrayNotEmpty,
   IsArray,
   IsBoolean,
   IsEmail,
+  IsIn,
   IsInt,
   IsNumber,
   IsOptional,
@@ -13,6 +14,19 @@ import {
   Min,
   ValidateNested,
 } from 'class-validator';
+
+const ESTADOS_ORDEN_COMPRA = [
+  'BORRADOR',
+  'ENVIADA',
+  'CONFIRMADA',
+  'EN_TRANSITO',
+  'RECIBIDA_PARCIAL',
+  'RECIBIDA',
+  'CANCELADA',
+] as const;
+
+const limpiarOpcional = ({ value }: { value: unknown }) =>
+  value === '' || value === null ? undefined : value;
 
 export class CrearProveedorDto {
   @IsString()
@@ -24,20 +38,24 @@ export class CrearProveedorDto {
   ruc: string;
 
   @IsOptional()
+  @Transform(limpiarOpcional)
   @IsString()
   @MaxLength(100)
   contacto?: string;
 
   @IsOptional()
+  @Transform(limpiarOpcional)
   @IsEmail()
   correo?: string;
 
   @IsOptional()
+  @Transform(limpiarOpcional)
   @IsString()
   @MaxLength(20)
   telefono?: string;
 
   @IsOptional()
+  @Transform(limpiarOpcional)
   @IsString()
   @MaxLength(500)
   direccion?: string;
@@ -53,9 +71,16 @@ export class CrearProveedorDto {
   activo?: boolean;
 
   @IsOptional()
+  @Transform(limpiarOpcional)
   @IsString()
   @MaxLength(2000)
   notas?: string;
+}
+
+export class ActualizarEstadoOrdenDto {
+  @IsString()
+  @IsIn(ESTADOS_ORDEN_COMPRA)
+  estado: (typeof ESTADOS_ORDEN_COMPRA)[number];
 }
 
 export class CrearOrdenCompraItemDto {

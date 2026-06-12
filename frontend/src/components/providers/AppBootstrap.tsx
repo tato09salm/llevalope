@@ -4,10 +4,12 @@ import { useEffect, useRef } from 'react';
 import Cookies from 'js-cookie';
 import { useAuthStore } from '../../store/auth.store';
 import { useCarritoStore } from '../../store/carrito.store';
+import { useWishlistStore } from '../../store/wishlist.store';
 
 export default function AppBootstrap() {
   const { usuario, cargarPerfil } = useAuthStore();
   const { sincronizarConServidor, desvincularSesion } = useCarritoStore();
+  const { fetchWishlist } = useWishlistStore();
   const perfilIntentado = useRef(false);
 
   useEffect(() => {
@@ -33,7 +35,11 @@ export default function AppBootstrap() {
     sincronizarConServidor(usuario.id).catch(() => {
       // El store conserva el carrito local si la sincronizacion falla.
     });
-  }, [usuario, sincronizarConServidor, desvincularSesion]);
+    
+    fetchWishlist().catch(() => {
+      // Error al cargar wishlist
+    });
+  }, [usuario, sincronizarConServidor, desvincularSesion, fetchWishlist]);
 
   return null;
 }

@@ -31,7 +31,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="es" className={`${poppins.variable} ${montserrat.variable}`}>
+    <html lang="es" className={`${poppins.variable} ${montserrat.variable}`} suppressHydrationWarning={true}>
       <body className="font-poppins bg-crema">
         <AppBootstrap />
         {children}

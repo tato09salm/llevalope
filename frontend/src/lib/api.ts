@@ -21,7 +21,13 @@ api.interceptors.request.use((config) => {
 
 // Interceptor: manejar respuestas
 api.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    // Si es blob, retornar toda la respuesta para acceder a .data
+    if (response.config.responseType === 'blob') {
+      return response;
+    }
+    return response.data;
+  },
   (error) => {
     if (error.response?.status === 401) {
       Cookies.remove('llevalope_token');
@@ -128,12 +134,19 @@ export const usuariosAPI = {
   crearDireccion: (datos: any) => post('/usuarios/direcciones', datos),
   actualizarDireccion: (id: number, datos: any) => put(`/usuarios/direcciones/${id}`, datos),
   eliminarDireccion: (id: number) => del(`/usuarios/direcciones/${id}`),
+  // Wishlist
+  obtenerWishlist: () => get('/usuarios/wishlist'),
+  agregarAWishlist: (productoId: number) => post('/usuarios/wishlist', { productoId }),
+  eliminarDeWishlist: (productoId: number) => del(`/usuarios/wishlist/${productoId}`),
 };
 
 export const proveedoresAPI = {
-  listar: () => get('/proveedores'),
+  listar: (params?: any) => get('/proveedores', { params }),
+  obtener: (id: number) => get(`/proveedores/${id}`),
   crear: (datos: any) => post('/proveedores', datos),
-  listarOrdenes: () => get('/proveedores/ordenes'),
+  actualizar: (id: number, datos: any) => put(`/proveedores/${id}`, datos),
+  eliminar: (id: number) => del(`/proveedores/${id}`),
+  listarOrdenes: (params?: any) => get('/proveedores/ordenes', { params }),
   crearOrden: (datos: any) => post('/proveedores/ordenes', datos),
 };
 
@@ -159,6 +172,14 @@ export const reportesAPI = {
   dashboard: () => get('/reportes/dashboard'),
   ventasPorDia: () => get('/reportes/ventas-por-dia'),
   masVendidos: () => get('/reportes/productos-mas-vendidos'),
+  // PDF
+  descargarPDFVentas: () => api.get('/reportes/ventas/pdf', { responseType: 'blob' }),
+  descargarPDFProductos: () => api.get('/reportes/productos/pdf', { responseType: 'blob' }),
+  descargarPDFPedidos: () => api.get('/reportes/pedidos/pdf', { responseType: 'blob' }),
+  // CSV
+  descargarCSVVentas: () => api.get('/reportes/ventas/csv', { responseType: 'blob' }),
+  descargarCSVProductos: () => api.get('/reportes/productos/csv', { responseType: 'blob' }),
+  descargarCSVPedidos: () => api.get('/reportes/pedidos/csv', { responseType: 'blob' }),
 };
 
 export default api;
