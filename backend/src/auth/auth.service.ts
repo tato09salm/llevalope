@@ -4,12 +4,14 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private mailService: MailService,
   ) {}
 
   async registrar(dto: RegisterDto) {
@@ -41,6 +43,12 @@ export class AuthService {
         creadoEn: true,
       },
     });
+
+    // Send welcome email (non-blocking)
+    this.mailService.sendWelcomeEmail(
+      `${usuario.nombre} ${usuario.apellido}`,
+      usuario.correo,
+    );
 
     const token = this.generarToken(usuario);
     return { usuario, token };

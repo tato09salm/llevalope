@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pedido Recibido</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background-color: #F5F3EE;
+      padding: 20px;
+    }
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .header {
+      background-color: #1B263B;
+      color: white;
+      padding: 30px;
+      text-align: center;
+      border-bottom: 4px solid #D4AF37;
+    }
+    .header h1 {
+      font-size: 28px;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .header p {
+      font-size: 14px;
+      color: #e0e0e0;
+    }
+    .content {
+      padding: 40px 30px;
+    }
+    .content h2 {
+      color: #0D1B2A;
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+    .content p {
+      color: #444;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+    .order-info {
+      background-color: #F5F3EE;
+      padding: 20px;
+      border-radius: 6px;
+      margin: 20px 0;
+    }
+    .order-info p {
+      margin: 8px 0;
+    }
+    .order-info strong {
+      color: #0D1B2A;
+    }
+    .product-list {
+      margin: 20px 0;
+      border-top: 1px solid #eee;
+      padding-top: 20px;
+    }
+    .product-item {
+      padding: 12px 0;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .product-name {
+      color: #0D1B2A;
+      font-weight: 500;
+    }
+    .product-total {
+      color: #006D77;
+      font-weight: bold;
+    }
+    .total-section {
+      text-align: right;
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+      color: #0D1B2A;
+    }
+    .btn {
+      display: inline-block;
+      padding: 14px 32px;
+      background-color: #006D77;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .btn:hover {
+      background-color: #004d56;
+    }
+    .footer {
+      background-color: #0D1B2A;
+      color: #aaa;
+      padding: 25px;
+      text-align: center;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>LlevaloPe</h1>
+      <p>Tu Tienda Online, Sin Límites</p>
+    </div>
+    <div class="content">
+      <h2>¡Pedido recibido correctamente!</h2>
+      <p>Hemos recibido tu pedido. En breve comenzaremos a procesarlo.</p>
+      
+      <div class="order-info">
+        <p><strong>Número de pedido:</strong> #{{pedidoId}}</p>
+        <p><strong>Fecha:</strong> {{fecha}}</p>
+      </div>
+      
+      <h3 style="color: #0D1B2A; margin-bottom: 15px;">Productos comprados</h3>
+      <div class="product-list">
+        {{#each productos}}
+        <div class="product-item">
+          <span class="product-name">{{nombre}} x {{cantidad}}</span>
+          <span class="product-total">{{total}}</span>
+        </div>
+        {{/each}}
+      </div>
+      
+      <div class="total-section">
+        <p>Total: <span style="color: #006D77;">{{total}}</span></p>
+      </div>
+      
+      <a href="#" class="btn">Ver pedido</a>
+      
+      <p>Recibirás actualizaciones sobre el estado de tu pedido en este correo.</p>
+    </div>
+    <div class="footer">
+      <p>LlevaloPe © 2026</p>
+      <p>Este correo fue generado automáticamente.</p>
+    </div>
+  </div>
+</body>
+</html>

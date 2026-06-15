@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
+import { MailService } from '../mail/mail.service';
 import {
   calcularCostoEnvio,
   calcularIgvIncluido,
@@ -14,7 +15,7 @@ import {
 
 @Injectable()
 export class PedidosService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService, private mailService: MailService) {}
 
   async previewCheckout(usuarioId: number, datos: any) {
     return this.construirCheckout(usuarioId, datos, Boolean(datos.reservarStock));
@@ -99,6 +100,7 @@ export class PedidosService {
           items: true,
           historial: true,
           cupon: true,
+          usuario: true,
         },
       });
 
@@ -153,6 +155,19 @@ export class PedidosService {
 
       return nuevoPedido;
     });
+
+    // Send order confirmation email
+    this.mailService.sendOrderConfirmation(
+      pedido.usuario.correo,
+      pedido.id,
+      new Date(pedido.creadoEn).toLocaleDateString('es-PE'),
+      Number(pedido.total),
+      pedido.items.map(i => ({
+        nombre: i.nombre,
+        cantidad: i.cantidad,
+        total: new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(Number(i.subtotal)),
+      })),
+    );
 
     return pedido;
   }
@@ -223,10 +238,10 @@ export class PedidosService {
   }
 
   async actualizarEstado(id: number, estado: string, descripcion?: string) {
-    const pedido = await this.prisma.pedido.findUnique({ where: { id } });
+    const pedido = await this.prisma.pedido.findUnique({ where: { id }, include: { usuario: true } });
     if (!pedido) throw new NotFoundException('Pedido no encontrado');
 
-    return this.prisma.$transaction([
+    const result = await this.prisma.$transaction([
       this.prisma.pedido.update({
         where: { id },
         data: { estado: estado as any },
@@ -239,6 +254,25 @@ export class PedidosService {
         },
       }),
     ]);
+
+    // Send order status update email
+    const subjectMap: Record<string, string> = {
+      PENDIENTE: 'Tu pedido está pendiente',
+      EN_PREPARACION: 'Tu pedido está siendo preparado',
+      ENVIADO: 'Tu pedido fue enviado',
+      ENTREGADO: 'Tu pedido fue entregado',
+      CANCELADO: 'Tu pedido fue cancelado',
+    };
+
+    this.mailService.sendOrderStatusUpdate(
+      pedido.usuario.correo,
+      pedido.id,
+      estado,
+      new Date().toLocaleDateString('es-PE'),
+      subjectMap[estado] || 'Actualización de tu pedido',
+    );
+
+    return result;
   }
 
   async listarTodos(params: { pagina?: number; limite?: number; estado?: string }) {

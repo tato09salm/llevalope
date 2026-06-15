@@ -14,6 +14,7 @@ import { ProveedoresModule } from './proveedores/proveedores.module';
 import { InventarioModule } from './inventario/inventario.module';
 import { SoporteModule } from './soporte/soporte.module';
 import { ReportesModule } from './reportes/reportes.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ReportesModule } from './reportes/reportes.module';
       },
     ]),
     PrismaModule,
+    MailModule,
     AuthModule,
     UsuariosModule,
     ProductosModule,
