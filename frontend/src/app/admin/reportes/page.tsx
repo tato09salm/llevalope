@@ -1,13 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { BarChart3, TrendingUp, Package, Users, DollarSign, Calendar, Download } from 'lucide-react';
+import { BarChart3, TrendingUp, Package, Users, DollarSign, Calendar, Download, Warehouse, UserCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminShell from '../../../components/admin/AdminShell';
 import { reportesAPI } from '../../../lib/api';
 
 const extraerMensajeError = (error: any, fallback: string) => {
   if (!error) return fallback;
+  if (typeof error === 'string') return error;
   if (typeof error.message === 'string') return error.message;
   if (Array.isArray(error.message)) return error.message.join(', ');
   return fallback;
@@ -95,45 +96,50 @@ export default function AdminReportesPage() {
   const descargarPDFPedidos = () =>
     descargarPDF(reportesAPI.descargarPDFPedidos, 'reporte-pedidos.pdf', 'pedidos', 'pdf-pedidos');
 
-  // Funciones de descarga CSV
-  const descargarCSVVentas = async () => {
-    setDescargando('csv-ventas');
+  const descargarPDFInventario = () =>
+    descargarPDF(reportesAPI.descargarPDFInventario, 'reporte-inventario.pdf', 'inventario', 'pdf-inventario');
+
+  const descargarPDFClientes = () =>
+    descargarPDF(reportesAPI.descargarPDFClientes, 'reporte-clientes.pdf', 'clientes', 'pdf-clientes');
+
+  // Funciones de descarga Excel
+  const descargarExcel = async (
+    descargarFn: () => Promise<{ data: Blob }>,
+    nombreArchivo: string,
+    etiqueta: string,
+    clave: string,
+  ) => {
+    setDescargando(clave);
     try {
-      const resp = await reportesAPI.descargarCSVVentas();
-      descargarArchivo(resp.data, 'reporte-ventas.csv');
-      toast.success('Reporte de ventas CSV descargado');
+      console.log('[AdminReportesPage] Descargando Excel de', etiqueta);
+      const resp = await descargarFn();
+      console.log('[AdminReportesPage] Respuesta recibida, data:', resp);
+      console.log('[AdminReportesPage] Tipo de data:', typeof resp.data);
+      console.log('[AdminReportesPage] Tamaño del blob:', resp.data.size);
+      descargarArchivo(resp.data, nombreArchivo, 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+      toast.success(`Reporte de ${etiqueta} descargado`);
     } catch (error: any) {
-      toast.error('Error al descargar el CSV de ventas');
+      console.error('[AdminReportesPage] Error al descargar Excel de', etiqueta, ':', error);
+      toast.error(extraerMensajeError(error, `Error al descargar el Excel de ${etiqueta}`));
     } finally {
       setDescargando(null);
     }
   };
 
-  const descargarCSVProductos = async () => {
-    setDescargando('csv-productos');
-    try {
-      const resp = await reportesAPI.descargarCSVProductos();
-      descargarArchivo(resp.data, 'reporte-productos.csv');
-      toast.success('Reporte de productos CSV descargado');
-    } catch (error: any) {
-      toast.error('Error al descargar el CSV de productos');
-    } finally {
-      setDescargando(null);
-    }
-  };
+  const descargarExcelVentas = () =>
+    descargarExcel(reportesAPI.descargarExcelVentas, 'reporte-ventas.xlsx', 'ventas', 'excel-ventas');
 
-  const descargarCSVPedidos = async () => {
-    setDescargando('csv-pedidos');
-    try {
-      const resp = await reportesAPI.descargarCSVPedidos();
-      descargarArchivo(resp.data, 'reporte-pedidos.csv');
-      toast.success('Reporte de pedidos CSV descargado');
-    } catch (error: any) {
-      toast.error('Error al descargar el CSV de pedidos');
-    } finally {
-      setDescargando(null);
-    }
-  };
+  const descargarExcelProductos = () =>
+    descargarExcel(reportesAPI.descargarExcelProductos, 'reporte-productos.xlsx', 'productos', 'excel-productos');
+
+  const descargarExcelPedidos = () =>
+    descargarExcel(reportesAPI.descargarExcelPedidos, 'reporte-pedidos.xlsx', 'pedidos', 'excel-pedidos');
+
+  const descargarExcelInventario = () =>
+    descargarExcel(reportesAPI.descargarExcelInventario, 'reporte-inventario.xlsx', 'inventario', 'excel-inventario');
+
+  const descargarExcelClientes = () =>
+    descargarExcel(reportesAPI.descargarExcelClientes, 'reporte-clientes.xlsx', 'clientes', 'excel-clientes');
 
   const formatPrecio = (valor: number) =>
     new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(valor);
@@ -334,46 +340,94 @@ export default function AdminReportesPage() {
                     )}
                     {descargando === 'pdf-pedidos' ? 'Descargando...' : 'Pedidos (PDF)'}
                   </button>
+                  <button
+                    onClick={descargarPDFInventario}
+                    disabled={descargando !== null}
+                    className="btn-primario inline-flex items-center gap-2"
+                  >
+                    {descargando === 'pdf-inventario' ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Warehouse size={16} />
+                    )}
+                    {descargando === 'pdf-inventario' ? 'Descargando...' : 'Inventario (PDF)'}
+                  </button>
+                  <button
+                    onClick={descargarPDFClientes}
+                    disabled={descargando !== null}
+                    className="btn-primario inline-flex items-center gap-2"
+                  >
+                    {descargando === 'pdf-clientes' ? (
+                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <UserCircle size={16} />
+                    )}
+                    {descargando === 'pdf-clientes' ? 'Descargando...' : 'Clientes (PDF)'}
+                  </button>
                 </div>
               </div>
               <div className="space-y-3">
-                <h3 className="font-medium text-azul-oscuro text-sm">Formatos CSV</h3>
+                <h3 className="font-medium text-azul-oscuro text-sm">Formatos Excel</h3>
                 <div className="flex flex-wrap gap-3">
                   <button
-                    onClick={descargarCSVVentas}
+                    onClick={descargarExcelVentas}
                     disabled={descargando !== null}
                     className="btn-secundario inline-flex items-center gap-2"
                   >
-                    {descargando === 'csv-ventas' ? (
+                    {descargando === 'excel-ventas' ? (
                       <div className="w-4 h-4 border-2 border-azul-oscuro border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <Download size={16} />
                     )}
-                    {descargando === 'csv-ventas' ? 'Descargando...' : 'Ventas (CSV)'}
+                    {descargando === 'excel-ventas' ? 'Descargando...' : 'Ventas (Excel)'}
                   </button>
                   <button
-                    onClick={descargarCSVProductos}
+                    onClick={descargarExcelProductos}
                     disabled={descargando !== null}
                     className="btn-secundario inline-flex items-center gap-2"
                   >
-                    {descargando === 'csv-productos' ? (
+                    {descargando === 'excel-productos' ? (
                       <div className="w-4 h-4 border-2 border-azul-oscuro border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <Download size={16} />
                     )}
-                    {descargando === 'csv-productos' ? 'Descargando...' : 'Productos (CSV)'}
+                    {descargando === 'excel-productos' ? 'Descargando...' : 'Productos (Excel)'}
                   </button>
                   <button
-                    onClick={descargarCSVPedidos}
+                    onClick={descargarExcelPedidos}
                     disabled={descargando !== null}
                     className="btn-secundario inline-flex items-center gap-2"
                   >
-                    {descargando === 'csv-pedidos' ? (
+                    {descargando === 'excel-pedidos' ? (
                       <div className="w-4 h-4 border-2 border-azul-oscuro border-t-transparent rounded-full animate-spin" />
                     ) : (
                       <Download size={16} />
                     )}
-                    {descargando === 'csv-pedidos' ? 'Descargando...' : 'Pedidos (CSV)'}
+                    {descargando === 'excel-pedidos' ? 'Descargando...' : 'Pedidos (Excel)'}
+                  </button>
+                  <button
+                    onClick={descargarExcelInventario}
+                    disabled={descargando !== null}
+                    className="btn-secundario inline-flex items-center gap-2"
+                  >
+                    {descargando === 'excel-inventario' ? (
+                      <div className="w-4 h-4 border-2 border-azul-oscuro border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <Warehouse size={16} />
+                    )}
+                    {descargando === 'excel-inventario' ? 'Descargando...' : 'Inventario (Excel)'}
+                  </button>
+                  <button
+                    onClick={descargarExcelClientes}
+                    disabled={descargando !== null}
+                    className="btn-secundario inline-flex items-center gap-2"
+                  >
+                    {descargando === 'excel-clientes' ? (
+                      <div className="w-4 h-4 border-2 border-azul-oscuro border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <UserCircle size={16} />
+                    )}
+                    {descargando === 'excel-clientes' ? 'Descargando...' : 'Clientes (Excel)'}
                   </button>
                 </div>
               </div>

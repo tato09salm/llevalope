@@ -6,7 +6,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 10000,
+  timeout: 60000, // 60 seconds to handle Excel file generation time
   withCredentials: true,
 });
 
@@ -28,13 +28,20 @@ api.interceptors.response.use(
     }
     return response.data;
   },
-  (error) => {
+  async (error) => {
     if (error.response?.status === 401) {
       Cookies.remove('llevalope_token');
       if (typeof window !== 'undefined') {
         window.location.href = '/auth/iniciar-sesion';
       }
     }
+    
+    // If it's a blob error, we can't parse JSON, reject with a useful error
+    if (error.config?.responseType === 'blob') {
+      console.error('[API Interceptor] Error en respuesta blob:', error);
+      return Promise.reject(new Error('Error al descargar el archivo. Por favor intenta nuevamente.'));
+    }
+    
     return Promise.reject(error.response?.data || error);
   },
 );
@@ -176,10 +183,14 @@ export const reportesAPI = {
   descargarPDFVentas: () => api.get('/reportes/ventas/pdf', { responseType: 'blob' }),
   descargarPDFProductos: () => api.get('/reportes/productos/pdf', { responseType: 'blob' }),
   descargarPDFPedidos: () => api.get('/reportes/pedidos/pdf', { responseType: 'blob' }),
-  // CSV
-  descargarCSVVentas: () => api.get('/reportes/ventas/csv', { responseType: 'blob' }),
-  descargarCSVProductos: () => api.get('/reportes/productos/csv', { responseType: 'blob' }),
-  descargarCSVPedidos: () => api.get('/reportes/pedidos/csv', { responseType: 'blob' }),
+  descargarPDFInventario: () => api.get('/reportes/inventario/pdf', { responseType: 'blob' }),
+  descargarPDFClientes: () => api.get('/reportes/clientes/pdf', { responseType: 'blob' }),
+  // Excel
+  descargarExcelVentas: () => api.get('/reportes/ventas/excel', { responseType: 'blob' }),
+  descargarExcelProductos: () => api.get('/reportes/productos/excel', { responseType: 'blob' }),
+  descargarExcelPedidos: () => api.get('/reportes/pedidos/excel', { responseType: 'blob' }),
+  descargarExcelInventario: () => api.get('/reportes/inventario/excel', { responseType: 'blob' }),
+  descargarExcelClientes: () => api.get('/reportes/clientes/excel', { responseType: 'blob' }),
 };
 
 export default api;

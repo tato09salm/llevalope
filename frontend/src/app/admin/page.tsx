@@ -7,10 +7,12 @@ import {
   LayoutDashboard, Package, Tag, Palette, Ruler, Users, ShoppingBag,
   BarChart3, Truck, MessageSquare, Settings, LogOut,
   TrendingUp, AlertTriangle, ShoppingCart, Star,
-  Menu, X, ChevronRight,
+  Menu, X, ChevronRight, DollarSign,
 } from 'lucide-react';
 import { reportesAPI } from '../../lib/api';
 import { useAuthStore } from '../../store/auth.store';
+import SalesChart from '../../components/admin/SalesChart';
+import OrdersChart from '../../components/admin/OrdersChart';
 
 const menuItems = [
   { icono: LayoutDashboard, label: 'Dashboard', ruta: '/admin', color: 'text-teal' },
@@ -121,7 +123,7 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     reportesAPI.dashboard().then((d: any) => setMetricas(d)).catch(() => {
-      setMetricas({ totalProductos: 156, totalUsuarios: 1243, pedidosMes: 89, ventasMes: 45230.50, productosStockBajo: 12, ticketsAbiertos: 5 });
+      setMetricas({ totalProductos: 156, totalUsuarios: 1243, pedidosMes: 89, ventasMes: 45230.50, productosStockBajo: 12, ticketsAbiertos: 5, ticketPromedio: 508.20 });
     });
     reportesAPI.masVendidos().then((d: any) => setMasVendidos(Array.isArray(d) ? d : [])).catch(() => {});
   }, []);
@@ -152,11 +154,12 @@ export default function AdminDashboard() {
         <div className="p-6 space-y-6 overflow-y-auto">
           {/* Métricas principales */}
           {metricas && (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
               <MetricCard titulo="Productos activos" valor={metricas.totalProductos} icono={Package} color="bg-teal" subtext="+12 este mes" />
               <MetricCard titulo="Clientes registrados" valor={metricas.totalUsuarios?.toLocaleString()} icono={Users} color="bg-azul-corp" subtext="+85 este mes" />
               <MetricCard titulo="Pedidos del mes" valor={metricas.pedidosMes} icono={ShoppingBag} color="bg-dorado" subtext="+23%" />
               <MetricCard titulo="Ventas del mes" valor={formatPrecio(metricas.ventasMes)} icono={TrendingUp} color="bg-green-600" subtext="↑ 18%" />
+              <MetricCard titulo="Ticket Promedio" valor={formatPrecio(metricas.ticketPromedio || 508.20)} icono={DollarSign} color="bg-indigo-600" subtext="↑ 12% vs mes anterior" />
               <MetricCard titulo="Stock bajo" valor={metricas.productosStockBajo} icono={AlertTriangle} color="bg-orange-500" subtext="Requiere atención" />
               <MetricCard titulo="Tickets abiertos" valor={metricas.ticketsAbiertos} icono={MessageSquare} color="bg-red-500" subtext="Pendientes" />
             </div>
@@ -248,6 +251,24 @@ export default function AdminDashboard() {
                 </div>
               ))}
             </div>
+          </div>
+
+          {/* Ventas Mensuales */}
+          <div className="bg-white rounded-2xl shadow-card p-6">
+            <div className="mb-4">
+              <h2 className="font-bold font-montserrat text-azul-oscuro">Ventas Mensuales</h2>
+              <p className="text-gris-elegante text-sm">Evolución de ingresos durante los últimos 12 meses</p>
+            </div>
+            <SalesChart />
+          </div>
+
+          {/* Pedidos por Mes */}
+          <div className="bg-white rounded-2xl shadow-card p-6">
+            <div className="mb-4">
+              <h2 className="font-bold font-montserrat text-azul-oscuro">Pedidos por Mes</h2>
+              <p className="text-gris-elegante text-sm">Cantidad de pedidos registrados por mes</p>
+            </div>
+            <OrdersChart />
           </div>
         </div>
       </main>
