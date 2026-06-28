@@ -61,8 +61,6 @@ export const useCarritoStore = create<CarritoState>()(
 
       agregar: async (producto, variante, cantidad = 1) => {
         if (!tieneSesionActiva()) {
-          set({ items: aplicarAgregadoLocal(get().items, producto, variante, cantidad) });
-          get().calcularTotales();
           return;
         }
 
@@ -148,7 +146,8 @@ export const useCarritoStore = create<CarritoState>()(
       },
 
       calcularTotales: () => {
-        const { items } = get();
+        const rawItems = get().items || [];
+        const items = rawItems.filter((i) => i && i.producto && i.variante);
         const totalItems = items.reduce((sum, i) => sum + i.cantidad, 0);
         const subtotal = items.reduce(
           (sum, i) => {
@@ -159,7 +158,11 @@ export const useCarritoStore = create<CarritoState>()(
           },
           0,
         );
-        set({ totalItems, subtotal: redondearMoneda(subtotal) });
+        if (items.length !== rawItems.length) {
+          set({ items, totalItems, subtotal: redondearMoneda(subtotal) });
+        } else {
+          set({ totalItems, subtotal: redondearMoneda(subtotal) });
+        }
       },
     }),
     {

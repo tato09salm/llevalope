@@ -19,6 +19,7 @@ export function redondearMoneda(valor: number) {
 }
 
 export function obtenerPrecioVigente(variante: VarianteProducto) {
+  if (!variante) return 0;
   return Number(
     variante.enOferta && variante.precioOferta ? variante.precioOferta : variante.precioBase,
   );
@@ -26,11 +27,15 @@ export function obtenerPrecioVigente(variante: VarianteProducto) {
 
 export function calcularResumenLocal(items: ItemCarritoCalculable[], tipoEnvio: TipoEnvio = 'STANDARD') {
   const subtotalOriginal = redondearMoneda(
-    items.reduce((acc, item) => acc + obtenerPrecioVigente(item.variante) * item.cantidad, 0),
+    items.reduce((acc, item) => {
+      if (!item || !item.variante) return acc;
+      return acc + obtenerPrecioVigente(item.variante) * item.cantidad;
+    }, 0),
   );
 
   const descuentoOferta = redondearMoneda(
     items.reduce((acc, item) => {
+      if (!item || !item.variante) return acc;
       if (!(item.variante.enOferta && item.variante.precioOferta)) return acc;
       const ahorro = Number(item.variante.precioBase) - Number(item.variante.precioOferta);
       return acc + (ahorro > 0 ? ahorro * item.cantidad : 0);
@@ -39,6 +44,7 @@ export function calcularResumenLocal(items: ItemCarritoCalculable[], tipoEnvio: 
 
   const descuentoVolumen = redondearMoneda(
     items.reduce((acc, item) => {
+      if (!item || !item.variante) return acc;
       if (item.cantidad < 3) return acc;
       return acc + obtenerPrecioVigente(item.variante) * item.cantidad * DESCUENTO_VOLUMEN_TASA;
     }, 0),

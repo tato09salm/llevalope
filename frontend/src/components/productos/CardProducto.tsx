@@ -50,6 +50,11 @@ export default function CardProducto({ producto }: Props) {
 
   const agregarAlCarrito = (e: React.MouseEvent) => {
     e.preventDefault();
+    if (!usuario) {
+      toast.error('Debe iniciar sesión para agregar productos al carrito');
+      router.push('/auth/iniciar-sesion?redirigido=agregar-carrito');
+      return;
+    }
     if (displayedVariant) {
       agregar(producto, displayedVariant, 1);
       toast.success(`${producto.nombre.substring(0, 30)}... agregado al carrito`);
@@ -61,7 +66,7 @@ export default function CardProducto({ producto }: Props) {
     
     if (!usuario) {
       toast.error('Inicia sesión para guardar productos en tu lista de deseos');
-      router.push('/auth/iniciar-sesion');
+      router.push('/auth/iniciar-sesion?redirigido=wishlist');
       return;
     }
 

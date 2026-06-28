@@ -127,7 +127,7 @@ export default function SeccionConfianza() {
               { icono: MessageCircle, titulo: 'Chat en Línea', desc: 'Resolvemos tus dudas al instante.', color: 'bg-teal', ruta: '/ayuda/chat' },
               { icono: Mail, titulo: 'Correo Electrónico', desc: 'soporte@llevalope.pe', color: 'bg-azul-corp', ruta: 'mailto:soporte@llevalope.pe' },
               { icono: Phone, titulo: 'Teléfono', desc: '+51 900 123 456', color: 'bg-dorado', ruta: 'tel:+51900123456' },
-              { icono: HelpCircle, titulo: 'Preguntas Frecuentes', desc: 'Encuentra respuestas rápidas.', color: 'bg-azul-oscuro', ruta: '/ayuda/faq' },
+              { icono: HelpCircle, titulo: 'Preguntas Frecuentes', desc: 'Encuentra respuestas rápidas.', color: 'bg-azul-oscuro', ruta: '/ayuda' },
             ].map(({ icono: Icono, titulo, desc, color, ruta }) => (
               <motion.a
                 key={titulo}

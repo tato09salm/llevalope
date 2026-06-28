@@ -1,18 +1,29 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Minus, Plus, Trash2, ShoppingBag, ArrowLeft, Truck, ShieldCheck } from 'lucide-react';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import { useCarritoStore } from '../../store/carrito.store';
+import { useAuthStore } from '../../store/auth.store';
 import { calcularResumenLocal } from '../../lib/commerce';
 
 export default function CarritoPage() {
-  const { items, subtotal, actualizarCantidad, quitar, vaciar } = useCarritoStore();
+  const { items: rawItems, subtotal, actualizarCantidad, quitar, vaciar } = useCarritoStore();
+  const items = (rawItems || []).filter((i) => i && i.producto && i.variante);
+  const { usuario } = useAuthStore();
+  const router = useRouter();
   const [procesando, setProcesando] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (!usuario) {
+      router.push('/auth/iniciar-sesion?redirigido=carrito');
+    }
+  }, [usuario, router]);
 
   const formatPrecio = (p: number) =>
     new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(p);

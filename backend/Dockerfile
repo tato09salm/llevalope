@@ -1,4 +1,6 @@
-FROM node:20-alpine AS builder
+FROM node:20-slim AS builder
+
+RUN apt-get update -y && apt-get install -y openssl
 
 WORKDIR /app
 COPY package*.json ./
@@ -7,7 +9,9 @@ COPY . .
 RUN npx prisma generate
 RUN npm run build
 
-FROM node:20-alpine AS production
+FROM node:20-slim AS production
+
+RUN apt-get update -y && apt-get install -y openssl
 
 WORKDIR /app
 COPY package*.json ./
@@ -18,4 +22,4 @@ COPY --from=builder /app/prisma ./prisma
 
 EXPOSE 3001
 
-CMD ["node", "dist/main"]
+CMD ["node", "dist/src/main"]

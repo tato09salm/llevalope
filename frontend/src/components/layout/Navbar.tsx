@@ -12,6 +12,7 @@ import { useAuthStore } from '../../store/auth.store';
 import { useWishlistStore } from '../../store/wishlist.store';
 import { categoriasAPI } from '../../lib/api';
 import type { Categoria } from '../../types';
+import toast from 'react-hot-toast';
 
 export default function Navbar() {
   const [menuAbierto, setMenuAbierto] = useState(false);
@@ -130,18 +131,26 @@ export default function Navbar() {
               </Link>
 
               {/* Carrito */}
-              <Link
-                href="/carrito"
-                className="p-2.5 text-crema hover:text-dorado transition-colors relative flex items-center"
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (!usuario) {
+                    toast.error('Debe iniciar sesión para acceder al carrito');
+                    router.push('/auth/iniciar-sesion?redirigido=carrito');
+                  } else {
+                    router.push('/carrito');
+                  }
+                }}
+                className="p-2.5 text-crema hover:text-dorado transition-colors relative flex items-center focus:outline-none"
                 title="Carrito de compras"
               >
                 <ShoppingCart size={22} />
-                {totalItems > 0 && (
+                {usuario && totalItems > 0 && (
                   <span className="absolute -top-0.5 -right-0.5 bg-dorado text-azul-oscuro text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {totalItems > 99 ? '99+' : totalItems}
                   </span>
                 )}
-              </Link>
+              </button>
 
               {/* Usuario */}
               {usuario ? (

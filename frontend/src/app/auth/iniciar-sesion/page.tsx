@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, ShoppingCart, Loader2, Mail, Lock } from 'lucide-react';
+import { Eye, EyeOff, ShoppingCart, Loader2, Mail, Lock, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../store/auth.store';
 
@@ -13,6 +13,21 @@ export default function IniciarSesionPage() {
   const { iniciarSesion, cargando } = useAuthStore();
   const [mostrarPass, setMostrarPass] = useState(false);
   const [form, setForm] = useState({ correo: '', contrasena: '' });
+  const [mensajeAlerta, setMensajeAlerta] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const val = params.get('redirigido');
+      if (val === 'wishlist') {
+        setMensajeAlerta('Es necesario iniciar sesión en tu cuenta para acceder al módulo de Lista de deseos.');
+      } else if (val === 'carrito') {
+        setMensajeAlerta('Debe iniciar sesión en tu cuenta para acceder al carrito de compras.');
+      } else if (val === 'agregar-carrito') {
+        setMensajeAlerta('Debe iniciar sesión para agregar productos al carrito.');
+      }
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -26,7 +41,15 @@ export default function IniciarSesionPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-azul-oscuro via-azul-corp to-teal flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-azul-oscuro via-azul-corp to-teal flex items-center justify-center p-4 relative">
+      {/* Botón de volver al inicio en la esquina superior izquierda */}
+      <Link
+        href="/"
+        className="absolute top-4 left-4 md:top-8 md:left-8 z-50 flex items-center gap-2 px-4 py-2.5 bg-white bg-opacity-10 hover:bg-opacity-20 text-white rounded-xl transition-all duration-200 border border-white border-opacity-10 backdrop-blur-sm shadow-premium text-xs md:text-sm font-semibold"
+      >
+        <ArrowLeft size={16} /> Ir al Inicio
+      </Link>
+
       {/* Decoración */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-20 w-64 h-64 bg-white opacity-5 rounded-full" />
@@ -53,6 +76,23 @@ export default function IniciarSesionPage() {
             <h1 className="text-2xl font-bold font-montserrat text-azul-oscuro">¡Bienvenido!</h1>
             <p className="text-gris-elegante text-sm mt-1">Inicia sesión en tu cuenta</p>
           </div>
+
+          {/* Banner de aviso */}
+          {mensajeAlerta && (
+            <div className="mb-6 bg-amber-50 border-l-4 border-amber-500 p-4 rounded-xl flex items-start gap-3">
+              <div className="text-amber-600 mt-0.5 shrink-0">
+                <Lock size={16} />
+              </div>
+              <div className="text-left">
+                <p className="text-xs text-amber-800 font-semibold leading-none">
+                  Inicio de sesión requerido
+                </p>
+                <p className="text-[11px] text-amber-700 mt-1.5 leading-normal">
+                  {mensajeAlerta}
+                </p>
+              </div>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Eye, EyeOff, ShoppingCart, Loader2, Mail, Lock, User, Phone } from 'lucide-react';
+import { Eye, EyeOff, ShoppingCart, Loader2, Mail, Lock, User, Phone, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../store/auth.store';
 
@@ -52,7 +52,14 @@ export default function RegistrarPage() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-azul-oscuro via-azul-corp to-teal flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-azul-oscuro via-azul-corp to-teal flex items-center justify-center p-4 relative">
+      {/* Botón de volver al inicio en la esquina superior izquierda */}
+      <Link
+        href="/"
+        className="absolute top-4 left-4 md:top-8 md:left-8 z-50 flex items-center gap-2 px-4 py-2.5 bg-white bg-opacity-10 hover:bg-opacity-20 text-white rounded-xl transition-all duration-200 border border-white border-opacity-10 backdrop-blur-sm shadow-premium text-xs md:text-sm font-semibold"
+      >
+        <ArrowLeft size={16} /> Ir al Inicio
+      </Link>
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-20 left-20 w-64 h-64 bg-white opacity-5 rounded-full" />
         <div className="absolute bottom-20 right-20 w-96 h-96 bg-dorado opacity-5 rounded-full" />

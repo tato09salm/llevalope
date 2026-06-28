@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { productosAPI } from '@/lib/api';
 import { Producto, VarianteProducto } from '@/types';
 import { useCarritoStore } from '@/store/carrito.store';
+import { useAuthStore } from '@/store/auth.store';
 
 export default function ProductoDetallePage() {
   const params = useParams();
@@ -20,6 +21,7 @@ export default function ProductoDetallePage() {
   const [colorSeleccionado, setColorSeleccionado] = useState<VarianteProducto | null>(null);
   const [tallaSeleccionada, setTallaSeleccionada] = useState<VarianteProducto | null>(null);
   const { agregar } = useCarritoStore();
+  const { usuario } = useAuthStore();
 
   useEffect(() => {
     if (slug) {
@@ -96,6 +98,11 @@ export default function ProductoDetallePage() {
 
   const agregarAlCarrito = () => {
     if (!producto || !varianteSeleccionada) return;
+    if (!usuario) {
+      toast.error('Debe iniciar sesión para agregar productos al carrito');
+      router.push('/auth/iniciar-sesion?redirigido=agregar-carrito');
+      return;
+    }
     agregar(producto, varianteSeleccionada, 1);
     toast.success(`${producto.nombre} agregado al carrito`);
   };

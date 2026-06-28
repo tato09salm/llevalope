@@ -21,7 +21,7 @@ export default function WishlistPage() {
 
   useEffect(() => {
     if (!usuario) {
-      router.push('/auth/iniciar-sesion');
+      router.push('/auth/iniciar-sesion?redirigido=wishlist');
     }
   }, [usuario, router]);
 
