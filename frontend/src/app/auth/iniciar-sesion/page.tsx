@@ -5,12 +5,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Eye, EyeOff, ShoppingCart, Loader2, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { GoogleLogin } from '@react-oauth/google';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '../../../store/auth.store';
 
 export default function IniciarSesionPage() {
   const router = useRouter();
-  const { iniciarSesion, cargando } = useAuthStore();
+  const { iniciarSesion, iniciarSesionGoogle, cargando } = useAuthStore();
   const [mostrarPass, setMostrarPass] = useState(false);
   const [form, setForm] = useState({ correo: '', contrasena: '' });
   const [mensajeAlerta, setMensajeAlerta] = useState<string | null>(null);
@@ -37,6 +38,16 @@ export default function IniciarSesionPage() {
       router.push('/');
     } catch (err: any) {
       toast.error(err.message || 'Credenciales incorrectas');
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse: any) => {
+    try {
+      await iniciarSesionGoogle(credentialResponse.credential);
+      toast.success('¡Bienvenido de vuelta!');
+      router.push('/');
+    } catch (err: any) {
+      toast.error(err.message || 'Error al iniciar sesión con Google');
     }
   };
 
@@ -146,6 +157,27 @@ export default function IniciarSesionPage() {
               )}
             </button>
           </form>
+
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gris-elegante border-opacity-20" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="px-2 bg-white text-gris-elegante">o</span>
+            </div>
+          </div>
+
+          <div className="flex justify-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                toast.error('Error al iniciar sesión con Google');
+              }}
+              text="continue_with"
+              shape="pill"
+              use_fedcm_for_prompt={false}
+            />
+          </div>
 
           <div className="text-center mt-6">
             <p className="text-gris-elegante text-sm">

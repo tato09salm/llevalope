@@ -10,6 +10,7 @@ interface AuthState {
   cargando: boolean;
   error: string | null;
   iniciarSesion: (correo: string, contrasena: string) => Promise<void>;
+  iniciarSesionGoogle: (idToken: string) => Promise<void>;
   registrar: (datos: any) => Promise<void>;
   cerrarSesion: () => void;
   cargarPerfil: () => Promise<void>;
@@ -37,6 +38,25 @@ export const useAuthStore = create<AuthState>()(
         } catch (err: any) {
           set({
             error: err.message || 'Error al iniciar sesión',
+            cargando: false,
+          });
+          throw err;
+        }
+      },
+
+      iniciarSesionGoogle: async (idToken) => {
+        set({ cargando: true, error: null });
+        try {
+          const resp: any = await authAPI.loginGoogle(idToken);
+          Cookies.set('llevalope_token', resp.token, {
+            expires: 7,
+            sameSite: 'strict',
+            secure: typeof window !== 'undefined' && window.location.protocol === 'https:',
+          });
+          set({ usuario: resp.usuario, token: resp.token, cargando: false });
+        } catch (err: any) {
+          set({
+            error: err.message || 'Error al iniciar sesión con Google',
             cargando: false,
           });
           throw err;

@@ -104,7 +104,7 @@ export class ProductosService {
           marca: { select: { id: true, nombre: true } },
           imagenes: { where: { principal: true }, take: 1 },
           variantes: { 
-            where: { activo: true },
+            where: todos ? {} : { activo: true },
             include: {
               color: true,
               size: true,

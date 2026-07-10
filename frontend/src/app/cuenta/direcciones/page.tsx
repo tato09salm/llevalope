@@ -11,10 +11,6 @@ import { useAuthStore } from '../../../store/auth.store';
 import { DireccionUsuario } from '../../../types';
 
 const FORM_INICIAL = {
-  alias: 'Casa',
-  nombres: '',
-  apellidos: '',
-  telefono: '',
   departamento: 'La Libertad',
   provincia: 'Trujillo',
   distrito: '',
@@ -23,16 +19,8 @@ const FORM_INICIAL = {
   predeterminada: false,
 };
 
-const crearFormularioInicial = (usuario?: {
-  nombre?: string;
-  apellido?: string;
-  telefono?: string;
-} | null) => ({
+const crearFormularioInicial = () => ({
   ...FORM_INICIAL,
-  alias: 'Casa',
-  nombres: usuario?.nombre || '',
-  apellidos: usuario?.apellido || '',
-  telefono: usuario?.telefono || '',
 });
 
 export default function DireccionesPage() {
@@ -49,8 +37,8 @@ export default function DireccionesPage() {
 
   useEffect(() => {
     if (editandoId) return;
-    setForm(crearFormularioInicial(usuario));
-  }, [usuario, editandoId]);
+    setForm(crearFormularioInicial());
+  }, [editandoId]);
 
   const cargarDirecciones = async () => {
     try {
@@ -66,8 +54,9 @@ export default function DireccionesPage() {
     setGuardando(true);
     const payload = {
       ...form,
-      alias: form.alias || 'Casa',
-      nombreCompleto: [form.nombres, form.apellidos].filter(Boolean).join(' ').trim(),
+      alias: 'Casa', // Default alias
+      nombreCompleto: `${usuario?.nombre || ''} ${usuario?.apellido || ''}`.trim(),
+      telefono: usuario?.telefono || '',
     };
 
     try {
@@ -78,7 +67,7 @@ export default function DireccionesPage() {
         await usuariosAPI.crearDireccion(payload);
         toast.success('Direccion agregada');
       }
-      setForm(crearFormularioInicial(usuario));
+      setForm(crearFormularioInicial());
       setEditandoId(null);
       await cargarDirecciones();
     } catch (error: any) {
@@ -89,15 +78,8 @@ export default function DireccionesPage() {
   };
 
   const editar = (direccion: DireccionUsuario) => {
-    const partesNombre = (direccion.nombreCompleto || '').trim().split(/\s+/);
-    const nombres = partesNombre.length > 1 ? partesNombre.slice(0, -1).join(' ') : partesNombre[0] || '';
-    const apellidos = partesNombre.length > 1 ? partesNombre[partesNombre.length - 1] : '';
     setEditandoId(direccion.id);
     setForm({
-      alias: direccion.alias,
-      nombres,
-      apellidos,
-      telefono: direccion.telefono,
       departamento: direccion.departamento,
       provincia: direccion.provincia,
       distrito: direccion.distrito,
@@ -151,34 +133,6 @@ export default function DireccionesPage() {
             </h2>
             <form onSubmit={guardar} className="grid md:grid-cols-2 gap-4">
               <input
-                value={form.alias}
-                onChange={(e) => setForm((prev) => ({ ...prev, alias: e.target.value }))}
-                placeholder="Alias"
-                className="input-campo"
-                required
-              />
-              <input
-                value={form.nombres}
-                onChange={(e) => setForm((prev) => ({ ...prev, nombres: e.target.value }))}
-                placeholder="Nombres"
-                className="input-campo"
-                required
-              />
-              <input
-                value={form.apellidos}
-                onChange={(e) => setForm((prev) => ({ ...prev, apellidos: e.target.value }))}
-                placeholder="Apellidos"
-                className="input-campo"
-                required
-              />
-              <input
-                value={form.telefono}
-                onChange={(e) => setForm((prev) => ({ ...prev, telefono: e.target.value }))}
-                placeholder="Telefono"
-                className="input-campo"
-                required
-              />
-              <input
                 value={form.departamento}
                 onChange={(e) => setForm((prev) => ({ ...prev, departamento: e.target.value }))}
                 placeholder="Departamento"
@@ -209,7 +163,7 @@ export default function DireccionesPage() {
               <input
                 value={form.referencia}
                 onChange={(e) => setForm((prev) => ({ ...prev, referencia: e.target.value }))}
-                placeholder="Referencia"
+                placeholder="Referencia (opcional)"
                 className="input-campo md:col-span-2"
               />
               <label className="md:col-span-2 flex items-center gap-2 text-sm text-gris-elegante">
@@ -229,7 +183,7 @@ export default function DireccionesPage() {
                     type="button"
                     onClick={() => {
                       setEditandoId(null);
-                      setForm(crearFormularioInicial(usuario));
+                      setForm(crearFormularioInicial());
                     }}
                     className="btn-secundario"
                   >

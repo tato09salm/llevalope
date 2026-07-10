@@ -1,34 +1,89 @@
-import axios from 'axios';
+import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import Cookies from 'js-cookie';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api';
 
+console.log('[API Config] URL base:', API_URL);
+
+// Configuración de reintentos
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000; // 1 segundo
+
+// Función para esperar
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// Función para verificar si un error debe ser reintentado
+const shouldRetry = (error: AxiosError, retryCount: number): boolean => {
+  if (retryCount >= MAX_RETRIES) return false;
+  
+  // Reintentar errores de red (sin respuesta)
+  if (!error.response) return true;
+  
+  // Reintentar errores 5xx (error del servidor)
+  if (error.response.status >= 500) return true;
+  
+  // Reintentar timeout
+  if (error.code === 'ECONNABORTED') return true;
+  
+  return false;
+};
+
 const api = axios.create({
   baseURL: API_URL,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 60000, // 60 seconds to handle Excel file generation time
+  timeout: 15000, // Reducir a 15 segundos para detectar problemas más rápido
   withCredentials: true,
 });
 
-// Interceptor: agregar token JWT
+// Interceptor: agregar token JWT y log de request
 api.interceptors.request.use((config) => {
+  console.log('[API Request]', config.method?.toUpperCase(), config.url);
   const token = Cookies.get('llevalope_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
+}, (error) => {
+  console.error('[API Request Error]', error);
+  return Promise.reject(error);
 });
 
-// Interceptor: manejar respuestas
+// Interceptor: manejar respuestas y errores detallados con reintentos
 api.interceptors.response.use(
   (response) => {
+    console.log('[API Response]', response.status, response.config.url);
     // Si es blob, retornar toda la respuesta para acceder a .data
     if (response.config.responseType === 'blob') {
       return response;
     }
     return response.data;
   },
-  async (error) => {
+  async (error: AxiosError) => {
+    const config = error.config as AxiosRequestConfig & { _retryCount?: number };
+    config._retryCount = config._retryCount || 0;
+
+    console.error('[API Error] Objeto de error completo:', error);
+    console.error('[API Error] Detalles:', {
+      message: error.message,
+      code: error.code,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      url: config?.url,
+      data: error.response?.data,
+      headers: error.response?.headers,
+      request: error.request,
+      retryCount: config._retryCount,
+    });
+
+    // Verificar si debemos reintentar
+    if (shouldRetry(error, config._retryCount)) {
+      config._retryCount += 1;
+      console.log(`[API Retry] Reintentando ${config.url} (${config._retryCount}/${MAX_RETRIES})...`);
+      
+      await delay(RETRY_DELAY * config._retryCount); // Backoff exponencial simple
+      return api(config);
+    }
+
     if (error.response?.status === 401) {
       Cookies.remove('llevalope_token');
       if (typeof window !== 'undefined') {
@@ -37,12 +92,32 @@ api.interceptors.response.use(
     }
     
     // If it's a blob error, we can't parse JSON, reject with a useful error
-    if (error.config?.responseType === 'blob') {
+    if (config?.responseType === 'blob') {
       console.error('[API Interceptor] Error en respuesta blob:', error);
       return Promise.reject(new Error('Error al descargar el archivo. Por favor intenta nuevamente.'));
     }
+
+    // Mejorar el mensaje de error para el usuario
+    let userMessage = 'Ocurrió un error inesperado';
     
-    return Promise.reject(error.response?.data || error);
+    if (!error.response) {
+      // Error de red (no hay respuesta del servidor)
+      if (error.code === 'ECONNABORTED') {
+        userMessage = 'Tiempo de espera agotado. Por favor verifica tu conexión e intenta nuevamente.';
+      } else {
+        userMessage = 'No se pudo conectar con el servidor. Por favor verifica que el backend esté activo y tu conexión a internet.';
+      }
+    } else if (error.response.status >= 500) {
+      userMessage = 'Error interno del servidor. Por favor intenta nuevamente más tarde.';
+    } else {
+      userMessage = (error.response.data as any)?.message || userMessage;
+    }
+
+    const enhancedError = new Error(userMessage);
+    (enhancedError as any).originalError = error;
+    (enhancedError as any).status = error.response?.status;
+    
+    return Promise.reject(enhancedError);
   },
 );
 
@@ -59,6 +134,7 @@ const del = async (url: string, config?: any): Promise<any> => api.delete(url, c
 export const authAPI = {
   registrar: (datos: any) => post('/auth/registrar', datos),
   iniciarSesion: (datos: any) => post('/auth/iniciar-sesion', datos),
+  loginGoogle: (idToken: string) => post('/auth/google', { idToken }),
   perfil: () => get('/auth/perfil'),
 };
 

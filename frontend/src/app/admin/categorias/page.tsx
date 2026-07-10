@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Search, Edit2, Trash2, Folder, Loader2, ChevronLeft, Power, ChevronDown, ChevronRight, X, AlertTriangle, FileText, Download } from 'lucide-react';
@@ -139,9 +139,8 @@ export default function AdminCategoriasPage() {
     const estaExpandida = expandidas.has(categoria.id);
 
     return (
-      <>
+      <React.Fragment key={categoria.id}>
         <motion.tr
-          key={categoria.id}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: index * 0.03 }}
@@ -282,7 +281,7 @@ export default function AdminCategoriasPage() {
             ))}
           </AnimatePresence>
         )}
-      </>
+      </React.Fragment>
     );
   };
 

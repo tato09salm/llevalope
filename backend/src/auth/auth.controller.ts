@@ -2,6 +2,7 @@ import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common'
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { GoogleLoginDto } from './dto/google-login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
@@ -16,6 +17,11 @@ export class AuthController {
   @Post('iniciar-sesion')
   async iniciarSesion(@Body() dto: LoginDto) {
     return this.authService.iniciarSesion(dto);
+  }
+
+  @Post('google')
+  async loginGoogle(@Body() dto: GoogleLoginDto) {
+    return this.authService.loginGoogle(dto);
   }
 
   @UseGuards(JwtAuthGuard)

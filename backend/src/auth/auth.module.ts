@@ -11,6 +11,7 @@ import { MailModule } from '../mail/mail.module';
 @Module({
   imports: [
     PassportModule,
+    ConfigModule, // This is the fix! So ConfigService can be injected into AuthService
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
