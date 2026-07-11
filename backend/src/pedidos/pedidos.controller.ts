@@ -6,7 +6,13 @@ import { PedidosService } from './pedidos.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
-import { ActualizarEstadoPedidoDto, CrearPedidoDto, ListarPedidosAdminDto, PreviewCheckoutDto } from './dto/pedidos.dto';
+import {
+  ActualizarEstadoPedidoDto,
+  CrearPedidoDto,
+  ListarPedidosAdminDto,
+  PreviewCheckoutDto,
+  SimularPagoDto,
+} from './dto/pedidos.dto';
 
 @UseGuards(JwtAuthGuard)
 @Controller('pedidos')
@@ -49,6 +55,16 @@ export class PedidosController {
     @Body() body: ActualizarEstadoPedidoDto,
   ) {
     return this.pedidosService.actualizarEstado(id, body.estado, body.descripcion);
+  }
+
+  @Post(':id/simular-pago')
+  simularPago(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() datos: SimularPagoDto,
+    @Request() req,
+  ) {
+    const esAdmin = ['ADMIN', 'GERENTE', 'OPERADOR'].includes(req.user.rol);
+    return this.pedidosService.simularPagoPedido(id, esAdmin ? undefined : req.user.id, datos);
   }
 
   @Get(':pedidoId/pagos')

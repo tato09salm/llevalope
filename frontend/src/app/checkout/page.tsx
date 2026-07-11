@@ -9,18 +9,11 @@ import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/layout/Footer';
 import { pedidosAPI, usuariosAPI } from '../../lib/api';
 import { calcularResumenLocal, TipoEnvio } from '../../lib/commerce';
+import { guardarCheckoutPendiente, MetodoPagoUI } from '../../lib/pagos';
+import SelectorMetodoPago from '../../components/checkout/pagos/SelectorMetodoPago';
 import { useAuthStore } from '../../store/auth.store';
 import { useCarritoStore } from '../../store/carrito.store';
 import { CheckoutPreview, DireccionUsuario } from '../../types';
-
-const METODOS_PAGO = [
-  { value: 'TARJETA', label: 'Tarjeta de credito o debito' },
-  { value: 'YAPE', label: 'Yape' },
-  { value: 'PLIN', label: 'Plin' },
-  { value: 'TRANSFERENCIA', label: 'Transferencia bancaria' },
-  { value: 'CONTRA_ENTREGA', label: 'Contra entrega' },
-  { value: 'PAYPAL', label: 'PayPal' },
-] as const;
 
 const DIRECCION_INICIAL = {
   alias: 'Casa',
@@ -41,7 +34,7 @@ export default function CheckoutPage() {
   const [direcciones, setDirecciones] = useState<DireccionUsuario[]>([]);
   const [direccionId, setDireccionId] = useState<number | null>(null);
   const [tipoEnvio, setTipoEnvio] = useState<TipoEnvio>('STANDARD');
-  const [metodoPago, setMetodoPago] = useState<(typeof METODOS_PAGO)[number]['value']>('TARJETA');
+  const [metodoPago, setMetodoPago] = useState<MetodoPagoUI>('YAPE');
   const [cupon, setCupon] = useState('');
   const [notas, setNotas] = useState('');
   const [preview, setPreview] = useState<CheckoutPreview | null>(null);
@@ -130,7 +123,7 @@ export default function CheckoutPage() {
     }
   };
 
-  const confirmarPedido = async () => {
+  const continuarAlPago = async () => {
     if (!usuario) {
       router.push('/auth/iniciar-sesion');
       return;
@@ -147,20 +140,27 @@ export default function CheckoutPage() {
 
     setConfirmando(true);
     try {
-      const pedido: any = await pedidosAPI.crear({
-        items: itemsPayload,
+      const direccionSeleccionada = direcciones.find((dir) => dir.id === direccionId);
+
+      guardarCheckoutPendiente({
+        itemsPayload,
         direccionId,
-        metodoPago,
-        cupon: cupon.trim() || undefined,
+        direccion: direccionSeleccionada,
         tipoEnvio,
-        checkoutToken: preview.checkoutToken,
+        cupon: cupon.trim() || undefined,
         notas: notas.trim() || undefined,
+        checkoutToken: preview.checkoutToken,
+        metodoPago,
+        total: resumen.total,
+        resumenItems: items.map((item) => ({
+          nombre: item.producto.nombre,
+          cantidad: item.cantidad,
+          sku: item.variante.sku,
+        })),
+        creadoEn: new Date().toISOString(),
       });
-      toast.success('Pedido creado correctamente');
-      router.push(`/cuenta/pedidos?pedido=${pedido.id}`);
-    } catch (error: any) {
-      toast.error(error.message || 'No se pudo crear el pedido');
-      await cargarPreview(true);
+
+      router.push('/checkout/pago');
     } finally {
       setConfirmando(false);
     }
@@ -344,21 +344,10 @@ export default function CheckoutPage() {
 
             <section className="bg-white rounded-2xl shadow-card p-6">
               <h2 className="text-lg font-bold text-azul-oscuro mb-4">Metodo de pago</h2>
-              <div className="grid md:grid-cols-2 gap-3">
-                {METODOS_PAGO.map((metodo) => (
-                  <label
-                    key={metodo.value}
-                    className={`border rounded-xl p-4 cursor-pointer ${metodoPago === metodo.value ? 'border-teal bg-teal/5' : 'border-gray-200'}`}
-                  >
-                    <input
-                      type="radio"
-                      checked={metodoPago === metodo.value}
-                      onChange={() => setMetodoPago(metodo.value)}
-                    />
-                    <span className="ml-2 text-sm font-medium text-azul-oscuro">{metodo.label}</span>
-                  </label>
-                ))}
-              </div>
+              <p className="text-sm text-gris-elegante mb-4">
+                Elige como quieres pagar. En el siguiente paso completaras el pago simulado.
+              </p>
+              <SelectorMetodoPago valor={metodoPago} onCambiar={setMetodoPago} />
             </section>
 
             <section className="bg-white rounded-2xl shadow-card p-6">
@@ -432,7 +421,7 @@ export default function CheckoutPage() {
 
               <button
                 type="button"
-                onClick={confirmarPedido}
+                onClick={continuarAlPago}
                 disabled={confirmando || cargandoPreview}
                 className="btn-primario w-full flex items-center justify-center gap-2"
               >
@@ -442,7 +431,7 @@ export default function CheckoutPage() {
                     Procesando...
                   </>
                 ) : (
-                  'Confirmar pedido'
+                  'Continuar al pago'
                 )}
               </button>
 

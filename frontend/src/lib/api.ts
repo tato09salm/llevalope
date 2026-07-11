@@ -200,6 +200,8 @@ export const pedidosAPI = {
   obtener: (id: number) => get(`/pedidos/${id}`),
   listarAdmin: (params?: any) => get('/pedidos/admin', { params }),
   actualizarEstado: (id: number, datos: any) => patch(`/pedidos/${id}/estado`, datos),
+  simularPago: (id: number, datos?: { numeroOperacion?: string; voucher?: string }) =>
+    post(`/pedidos/${id}/simular-pago`, datos || {}),
 };
 
 export const usuariosAPI = {

@@ -13,6 +13,11 @@ import {
   TipoEnvio,
 } from './pedidos.rules';
 
+// Métodos de pago que la simulación resuelve como pagados de inmediato.
+// El resto (transferencia, contra entrega) queda con estadoPago PENDIENTE
+// hasta una verificación manual o la entrega.
+const METODOS_PAGO_INSTANTANEOS = ['YAPE', 'PLIN', 'TARJETA', 'PAYPAL'];
+
 @Injectable()
 export class PedidosService {
   constructor(private prisma: PrismaService, private mailService: MailService) {}
@@ -22,7 +27,7 @@ export class PedidosService {
   }
 
   async crearPedido(usuarioId: number, datos: any) {
-    const { direccionId, metodoPago, notas, checkoutToken } = datos;
+    const { direccionId, metodoPago, notas, checkoutToken, datosPago } = datos;
 
     if (!direccionId) {
       throw new BadRequestException('Debes seleccionar una dirección de envío');
@@ -30,6 +35,15 @@ export class PedidosService {
 
     const preview = await this.construirCheckout(usuarioId, datos, false);
     const numeroPedido = this.generarNumeroPedido();
+    const metodoFinal = metodoPago || 'TARJETA';
+    const estadoPago = METODOS_PAGO_INSTANTANEOS.includes(metodoFinal) ? 'PAGADO' : 'PENDIENTE';
+    const detallePago = [
+      datosPago?.numeroOperacion ? `Operación: ${datosPago.numeroOperacion}` : null,
+      datosPago?.voucher ? `Voucher: ${datosPago.voucher}` : null,
+      datosPago?.ultimos4 ? `Tarjeta terminada en ${datosPago.ultimos4}` : null,
+    ]
+      .filter(Boolean)
+      .join(' - ');
 
     const pedido = await this.prisma.$transaction(async (tx) => {
       await this.validarDireccionUsuario(tx, usuarioId, direccionId);
@@ -63,7 +77,8 @@ export class PedidosService {
           numeroPedido,
           usuarioId,
           direccionId,
-          metodoPago: metodoPago || 'TARJETA',
+          metodoPago: metodoFinal,
+          estadoPago: estadoPago as any,
           subtotal: preview.resumen.subtotalProductos,
           descuento: preview.resumen.descuentoVolumen + preview.resumen.descuentoCupon,
           // descuentoCupon: preview.resumen.descuentoCupon,  // Field not in DB
@@ -89,10 +104,17 @@ export class PedidosService {
           historial: {
             create: {
               estado: 'PENDIENTE',
-              descripcion:
+              descripcion: [
                 preview.resumen.tipoEnvio === 'EXPRESS'
                   ? 'Pedido recibido con despacho express'
                   : 'Pedido recibido y pendiente de confirmacion',
+                estadoPago === 'PAGADO'
+                  ? `Pago simulado confirmado (${metodoFinal})`
+                  : `Pago pendiente de verificacion (${metodoFinal})`,
+                detallePago,
+              ]
+                .filter(Boolean)
+                .join(' | '),
             },
           },
         },
@@ -275,6 +297,42 @@ export class PedidosService {
     return result;
   }
 
+  /**
+   * Endpoint opcional de simulación: marca como PAGADO un pedido cuyo método
+   * de pago quedó PENDIENTE (transferencia, contra entrega, etc.) y deja
+   * constancia en el historial. No procesa ningún cobro real; solo enmascara
+   * la referencia recibida (nunca se guardan datos completos de tarjeta).
+   */
+  async simularPagoPedido(id: number, usuarioId: number | undefined, datos: { numeroOperacion?: string; voucher?: string }) {
+    const where: any = { id };
+    if (usuarioId) where.usuarioId = usuarioId;
+
+    const pedido = await this.prisma.pedido.findFirst({ where });
+    if (!pedido) throw new NotFoundException('Pedido no encontrado');
+
+    const referencia = datos.numeroOperacion
+      ? `Operación: ${datos.numeroOperacion}`
+      : datos.voucher
+        ? `Voucher: ${datos.voucher}`
+        : 'Sin referencia adicional';
+
+    const [pedidoActualizado] = await this.prisma.$transaction([
+      this.prisma.pedido.update({
+        where: { id },
+        data: { estadoPago: 'PAGADO' as any },
+      }),
+      this.prisma.historialPedido.create({
+        data: {
+          pedidoId: id,
+          estado: pedido.estado,
+          descripcion: `Pago simulado confirmado manualmente - ${referencia}`,
+        },
+      }),
+    ]);
+
+    return pedidoActualizado;
+  }
+
   async listarTodos(params: { pagina?: number; limite?: number; estado?: string }) {
     const { pagina = 1, limite = 20, estado } = params;
     const where: any = {};
@@ -393,24 +451,10 @@ export class PedidosService {
     let checkoutToken: string | undefined;
     let reservaExpiraEn: Date | undefined;
 
-    // if (reservarStock) { // Model not in DB
-    //   checkoutToken = randomUUID();
-    //   reservaExpiraEn = new Date(Date.now() + RESERVA_STOCK_MINUTOS * 60 * 1000);
-    //
-    //   await this.prisma.$transaction(async (tx) => {
-    //     await tx.reservaStock.deleteMany({ where: { usuarioId } });
-    //
-    //     await tx.reservaStock.createMany({
-    //       data: itemsValidados.map((item) => ({
-    //         usuarioId,
-    //         varianteId: item.varianteId,
-    //         cantidad: item.cantidad,
-    //         checkoutToken: checkoutToken!,
-    //         expiraEn: reservaExpiraEn!,
-    //       })),
-    //     });
-    //   });
-    // }
+    if (reservarStock) {
+      checkoutToken = randomUUID();
+      reservaExpiraEn = new Date(Date.now() + RESERVA_STOCK_MINUTOS * 60 * 1000);
+    }
 
     return {
       items: itemsValidados.map((item) => ({

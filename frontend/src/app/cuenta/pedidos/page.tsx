@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import Navbar from '../../../components/layout/Navbar';
 import Footer from '../../../components/layout/Footer';
 import CuentaNav from '../../../components/cuenta/CuentaNav';
+import { LogoMetodo } from '../../../components/checkout/pagos/LogosPago';
 import { pedidosAPI } from '../../../lib/api';
 import { useAuthStore } from '../../../store/auth.store';
 import { useCarritoStore } from '../../../store/carrito.store';
@@ -60,6 +61,13 @@ export default function PedidosCuentaPage() {
   const formatPrecio = (valor: number) =>
     new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(valor);
 
+  const colorEstadoPago: Record<string, string> = {
+    PAGADO: 'bg-teal/10 text-teal',
+    PENDIENTE: 'bg-dorado/10 text-dorado-oscuro',
+    FALLIDO: 'bg-red-50 text-red-600',
+    REEMBOLSADO: 'bg-gray-100 text-gris-elegante',
+  };
+
   if (!usuario) {
     return (
       <>
@@ -107,6 +115,17 @@ export default function PedidosCuentaPage() {
                     <p className="text-sm text-gris-elegante">
                       Estado actual: <span className="font-semibold text-azul-oscuro">{pedido.estado}</span>
                     </p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <LogoMetodo id={pedido.metodoPago} size={24} />
+                      <span className="text-xs font-medium text-azul-oscuro">{pedido.metodoPago}</span>
+                      <span
+                        className={`text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 ${
+                          colorEstadoPago[pedido.estadoPago] || 'bg-gray-100 text-gris-elegante'
+                        }`}
+                      >
+                        {pedido.estadoPago}
+                      </span>
+                    </div>
                   </div>
                   <div className="text-right">
                     <p className="text-2xl font-bold text-azul-oscuro">{formatPrecio(pedido.total)}</p>

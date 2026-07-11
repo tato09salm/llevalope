@@ -4,16 +4,27 @@ import { useEffect, useState } from 'react';
 import { Eye, Loader2, Package2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AdminShell from '../../../components/admin/AdminShell';
+import { LogoMetodo } from '../../../components/checkout/pagos/LogosPago';
 import { pedidosAPI } from '../../../lib/api';
 import { Pedido } from '../../../types';
 
 const ESTADOS_FILTRO = ['TODOS', 'PENDIENTE', 'CONFIRMADO', 'ENVIADO', 'ENTREGADO', 'CANCELADO'] as const;
 const ESTADOS_ACTUALIZABLES = ['PENDIENTE', 'CONFIRMADO', 'ENVIADO', 'ENTREGADO', 'CANCELADO'] as const;
+const METODOS_PAGO_FILTRO = [
+  'TODOS',
+  'TARJETA',
+  'YAPE',
+  'PLIN',
+  'TRANSFERENCIA',
+  'CONTRA_ENTREGA',
+  'PAYPAL',
+] as const;
 
 export default function AdminPedidosPage() {
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [pedidoSeleccionado, setPedidoSeleccionado] = useState<Pedido | null>(null);
   const [filtroEstado, setFiltroEstado] = useState<(typeof ESTADOS_FILTRO)[number]>('TODOS');
+  const [filtroMetodoPago, setFiltroMetodoPago] = useState<(typeof METODOS_PAGO_FILTRO)[number]>('TODOS');
   const [cargando, setCargando] = useState(true);
   const [actualizandoEstado, setActualizandoEstado] = useState<number | null>(null);
 
@@ -65,6 +76,11 @@ export default function AdminPedidosPage() {
   const formatPrecio = (valor: number) =>
     new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(valor);
 
+  const pedidosFiltrados =
+    filtroMetodoPago === 'TODOS'
+      ? pedidos
+      : pedidos.filter((pedido) => pedido.metodoPago === filtroMetodoPago);
+
   return (
     <AdminShell
       title="Gestion de Pedidos"
@@ -82,6 +98,19 @@ export default function AdminPedidosPage() {
             {ESTADOS_FILTRO.map((estado) => (
               <option key={estado} value={estado}>
                 {estado}
+              </option>
+            ))}
+          </select>
+
+          <span className="text-sm font-medium text-gris-elegante">Metodo de pago:</span>
+          <select
+            value={filtroMetodoPago}
+            onChange={(e) => setFiltroMetodoPago(e.target.value as (typeof METODOS_PAGO_FILTRO)[number])}
+            className="input-campo py-2.5 px-4 max-w-xs"
+          >
+            {METODOS_PAGO_FILTRO.map((metodo) => (
+              <option key={metodo} value={metodo}>
+                {metodo}
               </option>
             ))}
           </select>
@@ -103,19 +132,20 @@ export default function AdminPedidosPage() {
                     <th className="text-left px-5 py-3.5 text-xs font-bold text-azul-oscuro uppercase tracking-wide">Cliente</th>
                     <th className="text-left px-5 py-3.5 text-xs font-bold text-azul-oscuro uppercase tracking-wide">Fecha</th>
                     <th className="text-right px-5 py-3.5 text-xs font-bold text-azul-oscuro uppercase tracking-wide">Total</th>
+                    <th className="text-center px-5 py-3.5 text-xs font-bold text-azul-oscuro uppercase tracking-wide">Pago</th>
                     <th className="text-center px-5 py-3.5 text-xs font-bold text-azul-oscuro uppercase tracking-wide">Estado</th>
                     <th className="text-center px-5 py-3.5 text-xs font-bold text-azul-oscuro uppercase tracking-wide">Acciones</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {pedidos.length === 0 ? (
+                  {pedidosFiltrados.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-center py-16 text-gris-elegante">
+                      <td colSpan={7} className="text-center py-16 text-gris-elegante">
                         No hay pedidos para el filtro seleccionado.
                       </td>
                     </tr>
                   ) : (
-                    pedidos.map((pedido) => (
+                    pedidosFiltrados.map((pedido) => (
                       <tr key={pedido.id} className="hover:bg-crema transition-colors">
                         <td className="px-5 py-4 text-sm font-semibold text-azul-oscuro">{pedido.numeroPedido}</td>
                         <td className="px-5 py-4 text-sm text-azul-oscuro">
@@ -126,6 +156,20 @@ export default function AdminPedidosPage() {
                         </td>
                         <td className="px-5 py-4 text-sm text-right font-bold text-azul-oscuro">
                           {formatPrecio(pedido.total)}
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <div className="flex flex-col items-center gap-1">
+                            <LogoMetodo id={pedido.metodoPago} size={26} />
+                            <span
+                              className={`text-[9px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 ${
+                                pedido.estadoPago === 'PAGADO'
+                                  ? 'bg-teal/10 text-teal'
+                                  : 'bg-dorado/10 text-dorado-oscuro'
+                              }`}
+                            >
+                              {pedido.estadoPago}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-5 py-4 text-center">
                           <select
@@ -184,7 +228,19 @@ export default function AdminPedidosPage() {
                 </div>
                 <div className="bg-crema rounded-xl p-3">
                   <p className="text-gris-elegante">Pago</p>
-                  <p className="font-bold text-azul-oscuro">{pedidoSeleccionado.metodoPago}</p>
+                  <p className="font-bold text-azul-oscuro flex items-center gap-2">
+                    <LogoMetodo id={pedidoSeleccionado.metodoPago} size={22} />
+                    {pedidoSeleccionado.metodoPago}
+                  </p>
+                  <p
+                    className={`inline-block mt-1 text-[10px] font-semibold uppercase tracking-wide rounded-full px-2 py-0.5 ${
+                      pedidoSeleccionado.estadoPago === 'PAGADO'
+                        ? 'bg-teal/10 text-teal'
+                        : 'bg-dorado/10 text-dorado-oscuro'
+                    }`}
+                  >
+                    {pedidoSeleccionado.estadoPago}
+                  </p>
                 </div>
                 <div className="bg-crema rounded-xl p-3">
                   <p className="text-gris-elegante">Envio</p>

@@ -19,7 +19,7 @@ const FORM_INICIAL = {
   predeterminada: false,
 };
 
-const crearFormularioInicial = () => ({
+const crearFormularioInicial = (_usuario?: unknown) => ({
   ...FORM_INICIAL,
 });
 

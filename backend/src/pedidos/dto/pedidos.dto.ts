@@ -37,6 +37,23 @@ export class PedidoItemDto {
   cantidad: number;
 }
 
+export class DatosPagoDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  numeroOperacion?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  voucher?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(4)
+  ultimos4?: string;
+}
+
 export class CrearPedidoDto {
   @IsArray()
   @ArrayNotEmpty()
@@ -72,6 +89,26 @@ export class CrearPedidoDto {
   @IsString()
   @MaxLength(100)
   checkoutToken?: string;
+
+  // Metadata de la simulación de pago (no se persiste en tablas de tarjetas
+  // reales; solo se usa para decidir estadoPago y quedar registrada en notas
+  // / historial del pedido).
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DatosPagoDto)
+  datosPago?: DatosPagoDto;
+}
+
+export class SimularPagoDto {
+  @IsOptional()
+  @IsString()
+  @MaxLength(50)
+  numeroOperacion?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(255)
+  voucher?: string;
 }
 
 export class PreviewCheckoutDto {
@@ -129,4 +166,3 @@ export class ActualizarEstadoPedidoDto {
   @MaxLength(500)
   descripcion?: string;
 }
-
