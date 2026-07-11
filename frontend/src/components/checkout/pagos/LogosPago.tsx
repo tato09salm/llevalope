@@ -1,10 +1,10 @@
 'use client';
 
 // ========================
-// Logos simplificados (inline SVG) para la simulación de pagos.
-// No son las marcas oficiales pixel-perfect: son insignias genéricas con los
-// colores asociados a cada marca, suficientes para distinguir cada método
-// visualmente dentro de la simulación sin reproducir logotipos registrados.
+// Logos de métodos de pago.
+// Yape, Plin y PayPal usan las imágenes reales ubicadas en /public/logos-pago.
+// El resto sigue usando insignias genéricas (inline SVG) con los colores
+// asociados a cada marca, ya que no contamos con el logo oficial de esas.
 // ========================
 
 interface LogoProps {
@@ -36,8 +36,54 @@ const Badge = ({
   </svg>
 );
 
-export const LogoYape = (props: LogoProps) => <Badge {...props} bg="#7C2AE8" texto="yape" />;
-export const LogoPlin = (props: LogoProps) => <Badge {...props} bg="#00BFB3" texto="plin" />;
+// Contenedor común para logos que son imágenes reales (jpg/png):
+// fondo blanco redondeado + la imagen centrada con object-contain,
+// para que se vean consistentes con los badges SVG del resto de métodos.
+const ImagenLogo = ({
+  src,
+  alt,
+  size = 40,
+  className,
+  bg = '#fff',
+  padding = 6,
+}: LogoProps & { src: string; alt: string; bg?: string; padding?: number }) => (
+  <span
+    className={className}
+    style={{
+      display: 'inline-flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      width: size,
+      height: size,
+      borderRadius: size * 0.25,
+      background: bg,
+      overflow: 'hidden',
+      flexShrink: 0,
+    }}
+  >
+    {/* eslint-disable-next-line @next/next/no-img-element */}
+    <img
+      src={src}
+      alt={alt}
+      style={{
+        width: size - padding,
+        height: size - padding,
+        objectFit: 'contain',
+      }}
+    />
+  </span>
+);
+
+export const LogoYape = (props: LogoProps) => (
+  <ImagenLogo {...props} src="/logos-pago/yape.jpg" alt="Yape" padding={0} />
+);
+export const LogoPlin = (props: LogoProps) => (
+  <ImagenLogo {...props} src="/logos-pago/plin.png" alt="Plin" padding={0} />
+);
+export const LogoPaypal = (props: LogoProps) => (
+  <ImagenLogo {...props} src="/logos-pago/paypal.png" alt="PayPal" bg="#fff" padding={8} />
+);
+
 export const LogoQRUnificado = (props: LogoProps) => (
   <svg width={props.size ?? 40} height={props.size ?? 40} viewBox="0 0 40 40" className={props.className} aria-hidden>
     <rect width="40" height="40" rx="10" fill="#1B263B" />
@@ -65,7 +111,6 @@ export const LogoDiners = (props: LogoProps) => <Badge {...props} bg="#0079BE" t
 export const LogoTarjetaGenerica = (props: LogoProps) => <Badge {...props} bg="#0D1B2A" texto="Tarjeta" />;
 export const LogoTransferencia = (props: LogoProps) => <Badge {...props} bg="#006D77" texto="Banco" />;
 export const LogoPagoEfectivo = (props: LogoProps) => <Badge {...props} bg="#D4AF37" fg="#0D1B2A" texto="CIP" />;
-export const LogoPaypal = (props: LogoProps) => <Badge {...props} bg="#003087" texto="PayPal" />;
 export const LogoMercadoPago = (props: LogoProps) => <Badge {...props} bg="#00A9E0" texto="MP" />;
 export const LogoContraEntrega = (props: LogoProps) => <Badge {...props} bg="#7A7D85" texto="$" />;
 

@@ -27,6 +27,7 @@ import {
   obtenerDefinicionMetodo,
 } from '../../../lib/pagos';
 import { useAuthStore } from '../../../store/auth.store';
+import { useCarritoStore } from '../../../store/carrito.store';
 
 interface DatosPagoResultado {
   numeroOperacion?: string;
@@ -39,6 +40,7 @@ interface DatosPagoResultado {
 export default function PagoCheckoutPage() {
   const router = useRouter();
   const { usuario } = useAuthStore();
+  const { vaciar } = useCarritoStore();
   const [pendiente, setPendiente] = useState<CheckoutPendiente | null | undefined>(undefined);
   const [metodoActivo, setMetodoActivo] = useState<MetodoPagoUI | null>(null);
   const [creando, setCreando] = useState(false);
@@ -92,6 +94,7 @@ export default function PagoCheckoutPage() {
       });
 
       limpiarCheckoutPendiente();
+      await vaciar();
       toast.success('Pedido creado correctamente');
       router.push(`/checkout/exito/${pedido.id}`);
     } catch (error: any) {

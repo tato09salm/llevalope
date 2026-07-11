@@ -8,7 +8,8 @@ export class MailService {
   constructor(private readonly mailerService: MailerService) {}
 
   async sendWelcomeEmail(nombre: string, correo: string): Promise<void> {
-  const html = `
+  try {
+    const html = `
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -155,14 +156,20 @@ export class MailService {
 </body>
 </html>`;
 
-  await this.mailerService.sendMail({
-    to: correo,
-    from: process.env.MAIL_FROM,
-    subject: '¡Bienvenido a LlevaloPe! Tu cuenta está lista 🎉',
-    html,
-  });
+    await this.mailerService.sendMail({
+      to: correo,
+      from: process.env.MAIL_FROM,
+      subject: '¡Bienvenido a LlevaloPe! Tu cuenta está lista 🎉',
+      html,
+    });
 
-  this.logger.log(`Correo de bienvenida enviado a ${correo}`);
+    this.logger.log(`Correo de bienvenida enviado a ${correo}`);
+  } catch (error) {
+    this.logger.error(
+      `Failed to send welcome email to ${correo}`,
+      error.stack,
+    );
+  }
 }
 
   async sendOrderConfirmation(
@@ -172,17 +179,25 @@ export class MailService {
   total: number,
   productos: any[],
 ): Promise<void> {
-  await this.mailerService.sendMail({
-    to: correo,
-    from: process.env.MAIL_FROM,
-    subject: `Pedido #${pedidoId} confirmado`,
-    html: `
-      <h1>¡Gracias por tu compra!</h1>
-      <p>Pedido: #${pedidoId}</p>
-      <p>Fecha: ${fecha}</p>
-      <p>Total: S/ ${total}</p>
-    `,
-  });
+  try {
+    await this.mailerService.sendMail({
+      to: correo,
+      from: process.env.MAIL_FROM,
+      subject: `Pedido #${pedidoId} confirmado`,
+      html: `
+        <h1>¡Gracias por tu compra!</h1>
+        <p>Pedido: #${pedidoId}</p>
+        <p>Fecha: ${fecha}</p>
+        <p>Total: S/ ${total}</p>
+      `,
+    });
+    this.logger.log(`Correo de confirmación de pedido enviado a ${correo}`);
+  } catch (error) {
+    this.logger.error(
+      `Failed to send order confirmation email to ${correo}`,
+      error.stack,
+    );
+  }
 }
 
   async sendOrderStatusUpdate(
