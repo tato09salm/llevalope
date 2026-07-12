@@ -98,28 +98,26 @@ export default function AdminProductosPage() {
   const puedeEliminar = usuario?.rol === 'ADMIN' || usuario?.rol === 'GERENTE';
 
   return (
-    <div className="min-h-screen bg-crema">
+    <div className="p-6">
       {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link href="/admin" className="text-gris-elegante hover:text-teal transition-colors">
-              <ChevronLeft size={20} />
-            </Link>
-            <div>
-              <h1 className="text-xl font-bold font-montserrat text-azul-oscuro flex items-center gap-2">
-                <Package size={22} className="text-teal" /> Gestión de Productos
-              </h1>
-              <p className="text-xs text-gris-elegante">{total} productos registrados</p>
-            </div>
-          </div>
-          <Link href="/admin/productos/nuevo" className="btn-secundario flex items-center gap-2 text-sm">
-            <Plus size={16} /> Nuevo Producto
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Link href="/admin" className="text-gris-elegante hover:text-teal transition-colors">
+            <ChevronLeft size={20} />
           </Link>
+          <div>
+            <h1 className="text-xl font-bold font-montserrat text-azul-oscuro flex items-center gap-2">
+              <Package size={22} className="text-teal" /> Gestión de Productos
+            </h1>
+            <p className="text-xs text-gris-elegante">{total} productos registrados</p>
+          </div>
         </div>
+        <Link href="/admin/productos/nuevo" className="btn-secundario flex items-center gap-2 text-sm">
+          <Plus size={16} /> Nuevo Producto
+        </Link>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-7xl mx-auto">
         {/* Buscador */}
         <div className="bg-white rounded-2xl shadow-card p-4 mb-6 flex gap-4">
           <div className="relative flex-1">
