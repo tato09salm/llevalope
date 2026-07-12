@@ -62,6 +62,41 @@ llevalope/
 
 ## 🚀 Inicio Rápido
 
+### Paso 1: Crear archivos .env a partir de .env.example
+
+Antes de ejecutar el proyecto, copia los archivos de ejemplo de variables de entorno:
+
+**Windows (PowerShell):**
+```powershell
+# Archivo .env en la raíz
+Copy-Item .env.example .env
+
+# Archivo .env en backend
+Copy-Item backend\.env.example backend\.env
+```
+
+**Windows (CMD):**
+```cmd
+REM Archivo .env en la raíz
+copy .env.example .env
+
+REM Archivo .env en backend
+copy backend\.env.example backend\.env
+```
+
+**macOS / Linux (Bash/Zsh):**
+```bash
+# Archivo .env en la raíz
+cp .env.example .env
+
+# Archivo .env en backend
+cp backend/.env.example backend/.env
+```
+
+Después de copiarlos, edita los archivos `.env` según tus credenciales (si es necesario).
+
+---
+
 ### Opción 1: Con Docker (Recomendado)
 
 ```bash
