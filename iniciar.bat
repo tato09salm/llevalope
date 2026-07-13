@@ -22,7 +22,10 @@ echo.
 
 echo [▶] Configurando variables de entorno...
 if not exist .env (
-    copy .env .env.backup > nul 2>&1
+    copy .env.example .env > nul 2>&1
+)
+if not exist backend\.env (
+    copy backend\.env.example backend\.env > nul 2>&1
 )
 
 echo [▶] Levantando servicios...

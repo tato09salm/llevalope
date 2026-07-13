@@ -252,8 +252,14 @@ export default function Navbar() {
                 </div>
               ))}
               <Link
-                href="/ofertas"
-                className="px-4 py-2.5 text-dorado text-sm font-semibold hover:bg-white hover:bg-opacity-5 transition-all duration-200 rounded ml-auto flex items-center gap-1"
+                href="/dreamia"
+                className="px-4 py-2.5 text-teal text-sm font-semibold hover:bg-white hover:bg-opacity-5 transition-all duration-200 rounded ml-auto flex items-center gap-1"
+              >
+                ✨ DreamIA
+              </Link>
+              <Link
+                href="/productos?enOferta=true"
+                className="px-4 py-2.5 text-dorado text-sm font-semibold hover:bg-white hover:bg-opacity-5 transition-all duration-200 rounded flex items-center gap-1"
               >
                 🔥 Ofertas
               </Link>
@@ -287,6 +293,20 @@ export default function Navbar() {
                   {cat.nombre}
                 </Link>
               ))}
+              <Link
+                href="/dreamia"
+                onClick={() => setMenuAbierto(false)}
+                className="col-span-2 text-teal text-sm py-2.5 px-3 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 font-bold flex items-center justify-center gap-1 border border-teal border-opacity-35"
+              >
+                ✨ Probar DreamIA
+              </Link>
+              <Link
+                href="/productos?enOferta=true"
+                onClick={() => setMenuAbierto(false)}
+                className="col-span-2 text-dorado text-sm py-2.5 px-3 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 font-semibold flex items-center justify-center gap-1 border border-dorado border-opacity-35"
+              >
+                🔥 Ver Ofertas
+              </Link>
             </div>
             <div className="mt-4 flex gap-2">
               {usuario ? (

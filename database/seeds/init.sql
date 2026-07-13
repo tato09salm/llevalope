@@ -590,7 +590,21 @@ INSERT INTO productos (nombre, slug, descripcion_corta, categoria_id, marca_id, 
 ('Laptop Lenovo IdeaPad 5i', 'laptop-lenovo-ideapad-5i', 'Intel Core i7, 16GB RAM, 512GB SSD', 1, 4, true, true, 4.7, 62, 120, 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=1200'),
 ('Smart TV LG 55\" 4K OLED', 'smart-tv-lg-55-4k-oled', 'Resolucion 4K, HDR Dolby Vision, WebOS', 1, 6, true, true, 4.9, 41, 95, 'https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?w=1200'),
 ('Zapatillas Nike Air Max 270', 'zapatillas-nike-air-max-270', 'Comodidad extrema para el dia a dia', 5, 7, true, false, 4.5, 89, 210, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200'),
-('Cafetera Espresso DeLonghi', 'cafetera-espresso-delonghi', 'Presion 15 bar, espumador de leche', 2, 9, true, false, 4.6, 37, 80, 'https://images.unsplash.com/photo-1509460913899-515f1df34fea?w=1200');
+('Cafetera Espresso DeLonghi', 'cafetera-espresso-delonghi', 'Presion 15 bar, espumador de leche', 2, 9, true, false, 4.6, 37, 80, 'https://images.unsplash.com/photo-1509460913899-515f1df34fea?w=1200'),
+('Sofa Moderno Seccional Escandinavo', 'sofa-moderno-seccional-escandinavo', 'Sofa de 3 cuerpos tapizado en tela premium con patas de madera clara', 2, 9, true, true, 4.8, 15, 34, 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1200'),
+('Mesa de Centro Rustica Loft', 'mesa-de-centro-rustica-loft', 'Madera maciza recuperada con estructura de metal industrial', 2, 9, true, false, 4.5, 12, 18, 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=1200'),
+('Lampara de Pie Tripode Nordica', 'lampara-de-pie-tripode-nordica', 'Estructura de madera con pantalla de tela blanca suave', 2, 9, true, true, 4.6, 22, 45, 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=1200'),
+('Silla de Comedor Velvet Gold', 'silla-comedor-velvet-gold', 'Tapizado en terciopelo gris con elegantes patas doradas', 2, 9, true, false, 4.7, 8, 25, 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=1200'),
+('Estante Modular Industrial', 'estante-modular-industrial', 'Estanteria de 5 niveles de madera y metal para libros y adornos', 2, 9, true, true, 4.4, 19, 30, 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=1200'),
+('Espejo de Pared Redondo Dorado', 'espejo-pared-redondo-dorado', 'Espejo decorativo con marco de metal dorado brillante de 80cm', 2, 9, true, false, 4.6, 14, 22, 'https://images.unsplash.com/photo-1618220179428-22790b461013?w=1200'),
+('Alfombra Geometrica Pastel', 'alfombra-geometrica-pastel', 'Alfombra de felpa suave con patron geometrico estilo escandinavo', 2, 9, true, true, 4.5, 20, 39, 'https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=1200'),
+('Parlante Inteligente Google Nest Mini', 'parlante-inteligente-nest-mini', 'Asistente de Google integrado, segunda generacion', 1, 9, true, true, 4.6, 68, 142, 'https://images.unsplash.com/photo-1543512214-318c7553f230?w=1200'),
+('Cargador Inalambrico Rapido Qi', 'cargador-inalambrico-rapido-qi', 'Carga rapida de 15W para smartphones compatibles', 1, 9, true, false, 4.3, 40, 95, 'https://images.unsplash.com/photo-1622445262465-2481c8573290?w=1200'),
+('Camara de Seguridad Domestica Smart', 'camara-seguridad-domestica-smart', 'Resolucion 1080p, vision nocturna y audio de doble via', 1, 9, true, true, 4.5, 33, 76, 'https://images.unsplash.com/photo-1557324268-ac4a7b553f47?w=1200'),
+('Casaca Cortaviento Unisex', 'casaca-cortaviento-unisex', 'Ideal para deportes al aire libre, material impermeable', 3, 9, true, false, 4.4, 25, 60, 'https://images.unsplash.com/photo-1548883354-7622d03aca27?w=1200'),
+('Lentes de Sol Polarizados Classic', 'lentes-de-sol-polarizados-classic', 'Proteccion UV400, montura ligera de policarbonato', 3, 9, true, true, 4.6, 52, 115, 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=1200'),
+('Mancuernas Ajustables Hexagonales', 'mancuernas-ajustables-hexagonales', 'Set de mancuernas ajustables de acero hasta 20kg', 5, 9, true, true, 4.7, 18, 42, 'https://images.unsplash.com/photo-1638536532686-d610adfc8e5c?w=1200'),
+('Tapete de Yoga Antideslizante Premium', 'tapete-yoga-antideslizante-premium', 'Espesor de 6mm, material ecologico TPE con guia de posturas', 5, 9, true, false, 4.5, 31, 58, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=1200');
 
 -- Variantes (1 por producto para que el catalogo muestre precio y stock)
 INSERT INTO variantes_producto (
@@ -605,7 +619,21 @@ INSERT INTO variantes_producto (
 (5, 1, 1, 'LEN-LAP-001', 3999.90, 3299.90, 18, 20, 3, true, true, true, 0),
 (6, 1, 1, 'LGT-TV-001', 5499.90, 4599.90, 16, 15, 2, true, true, true, 0),
 (7, 1, 1, 'NIK-ZAP-001', 599.90, 469.90, 22, 120, 10, true, true, true, 0),
-(8, 1, 1, 'CAF-DEL-001', 899.90, NULL, 0, 28, 5, false, true, true, 0);
+(8, 1, 1, 'CAF-DEL-001', 899.90, NULL, 0, 28, 5, false, true, true, 0),
+(9, 1, 1, 'HOG-SOF-001', 2499.90, 1999.90, 20, 10, 2, true, true, true, 0),
+(10, 1, 1, 'HOG-MES-001', 799.90, NULL, 0, 15, 2, false, true, true, 0),
+(11, 1, 1, 'HOG-LAM-001', 349.90, 299.90, 14, 25, 5, true, true, true, 0),
+(12, 1, 1, 'HOG-SIL-001', 249.90, NULL, 0, 40, 5, false, true, true, 0),
+(13, 1, 1, 'HOG-EST-001', 899.90, 799.90, 11, 12, 2, true, true, true, 0),
+(14, 1, 1, 'HOG-ESP-001', 199.90, NULL, 0, 30, 5, false, true, true, 0),
+(15, 1, 1, 'HOG-ALF-001', 499.90, 399.90, 20, 18, 3, true, true, true, 0),
+(16, 1, 1, 'TEC-PAR-001', 249.90, 199.90, 20, 50, 10, true, true, true, 0),
+(17, 1, 1, 'TEC-CAR-001', 99.90, NULL, 0, 100, 10, false, true, true, 0),
+(18, 1, 1, 'TEC-CAM-001', 299.90, 249.90, 16, 35, 5, true, true, true, 0),
+(19, 1, 1, 'MOD-CAS-001', 149.90, NULL, 0, 60, 5, false, true, true, 0),
+(20, 1, 1, 'MOD-LEN-001', 89.90, 69.90, 22, 80, 5, true, true, true, 0),
+(21, 1, 1, 'DEP-MAN-001', 499.90, 449.90, 10, 15, 2, true, true, true, 0),
+(22, 1, 1, 'DEP-TAP-001', 129.90, NULL, 0, 45, 5, false, true, true, 0);
 
 -- Imagenes (para que el detalle del producto muestre galeria)
 INSERT INTO imagenes_producto (producto_id, url, alt, orden, principal) VALUES
@@ -616,7 +644,21 @@ INSERT INTO imagenes_producto (producto_id, url, alt, orden, principal) VALUES
 (5, 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?w=1200', 'Laptop Lenovo IdeaPad 5i', 0, true),
 (6, 'https://images.unsplash.com/photo-1527443154391-507e9dc6c5cc?w=1200', 'Smart TV LG 55\" 4K OLED', 0, true),
 (7, 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=1200', 'Zapatillas Nike Air Max 270', 0, true),
-(8, 'https://images.unsplash.com/photo-1509460913899-515f1df34fea?w=1200', 'Cafetera Espresso DeLonghi', 0, true);
+(8, 'https://images.unsplash.com/photo-1509460913899-515f1df34fea?w=1200', 'Cafetera Espresso DeLonghi', 0, true),
+(9, 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1200', 'Sofa Moderno Seccional Escandinavo', 0, true),
+(10, 'https://images.unsplash.com/photo-1533090161767-e6ffed986c88?w=1200', 'Mesa de Centro Rustica Loft', 0, true),
+(11, 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=1200', 'Lampara de Pie Tripode Nordica', 0, true),
+(12, 'https://images.unsplash.com/photo-1567538096630-e0c55bd6374c?w=1200', 'Silla de Comedor Velvet Gold', 0, true),
+(13, 'https://images.unsplash.com/photo-1595428774223-ef52624120d2?w=1200', 'Estante Modular Industrial', 0, true),
+(14, 'https://images.unsplash.com/photo-1618220179428-22790b461013?w=1200', 'Espejo de Pared Redondo Dorado', 0, true),
+(15, 'https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=1200', 'Alfombra Geometrica Pastel', 0, true),
+(16, 'https://images.unsplash.com/photo-1543512214-318c7553f230?w=1200', 'Parlante Inteligente Google Nest Mini', 0, true),
+(17, 'https://images.unsplash.com/photo-1622445262465-2481c8573290?w=1200', 'Cargador Inalambrico Rapido Qi', 0, true),
+(18, 'https://images.unsplash.com/photo-1557324268-ac4a7b553f47?w=1200', 'Camara de Seguridad Domestica Smart', 0, true),
+(19, 'https://images.unsplash.com/photo-1548883354-7622d03aca27?w=1200', 'Casaca Cortaviento Unisex', 0, true),
+(20, 'https://images.unsplash.com/photo-1511499767150-a48a237f0083?w=1200', 'Lentes de Sol Polarizados Classic', 0, true),
+(21, 'https://images.unsplash.com/photo-1638536532686-d610adfc8e5c?w=1200', 'Mancuernas Ajustables Hexagonales', 0, true),
+(22, 'https://images.unsplash.com/photo-1601925260368-ae2f83cf8b7f?w=1200', 'Tapete de Yoga Antideslizante Premium', 0, true);
 
 -- Proveedores
 INSERT INTO proveedores (nombre, ruc, contacto, correo, telefono, pais) VALUES

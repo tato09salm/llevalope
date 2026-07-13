@@ -271,4 +271,8 @@ export const reportesAPI = {
   descargarExcelClientes: () => api.get('/reportes/clientes/excel', { responseType: 'blob' }),
 };
 
+export const dreamiaAPI = {
+  generar: (estilo: string) => post('/dreamia/generar', { estilo }),
+};
+
 export default api;

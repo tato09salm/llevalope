@@ -16,6 +16,7 @@ import { SoporteModule } from './soporte/soporte.module';
 import { ReportesModule } from './reportes/reportes.module';
 import { MailModule } from './mail/mail.module';
 import { ComprobantesModule } from './comprobantes/comprobantes.module';
+import { DreamiaModule } from './dreamia/dreamia.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { ComprobantesModule } from './comprobantes/comprobantes.module';
     InventarioModule,
     SoporteModule,
     ReportesModule,
+    DreamiaModule,
   ],
 })
 export class AppModule {}

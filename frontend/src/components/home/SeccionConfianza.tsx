@@ -128,23 +128,35 @@ export default function SeccionConfianza() {
               { icono: Mail, titulo: 'Correo Electrónico', desc: 'soporte@llevalope.pe', color: 'bg-azul-corp', ruta: 'mailto:soporte@llevalope.pe' },
               { icono: Phone, titulo: 'Teléfono', desc: '+51 900 123 456', color: 'bg-dorado', ruta: 'tel:+51900123456' },
               { icono: HelpCircle, titulo: 'Preguntas Frecuentes', desc: 'Encuentra respuestas rápidas.', color: 'bg-azul-oscuro', ruta: '/ayuda' },
-            ].map(({ icono: Icono, titulo, desc, color, ruta }) => (
-              <motion.a
-                key={titulo}
-                href={ruta}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                whileHover={{ y: -4 }}
-                className="bg-white rounded-2xl p-6 shadow-card hover:shadow-hover transition-all duration-300 text-center cursor-pointer block"
-              >
-                <div className={`${color} w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4`}>
-                  <Icono size={24} className="text-white" />
+            ].map(({ icono: Icono, titulo, desc, color, ruta }) => {
+              const esExterno = ruta.startsWith('mailto:') || ruta.startsWith('tel:');
+              const cardContent = (
+                <div className="bg-white rounded-2xl p-6 shadow-card hover:shadow-hover transition-all duration-300 text-center h-full select-none">
+                  <div className={`${color} w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4`}>
+                    <Icono size={24} className="text-white" />
+                  </div>
+                  <h3 className="font-bold text-azul-oscuro mb-1">{titulo}</h3>
+                  <p className="text-gris-elegante text-sm">{desc}</p>
                 </div>
-                <h3 className="font-bold text-azul-oscuro mb-1">{titulo}</h3>
-                <p className="text-gris-elegante text-sm">{desc}</p>
-              </motion.a>
-            ))}
+              );
+
+              return (
+                <motion.div
+                  key={titulo}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  whileHover={{ y: -4 }}
+                  className="cursor-pointer block"
+                >
+                  {esExterno ? (
+                    <a href={ruta}>{cardContent}</a>
+                  ) : (
+                    <Link href={ruta}>{cardContent}</Link>
+                  )}
+                </motion.div>
+              );
+            })}
           </div>
 
           {/* CTA soporte */}

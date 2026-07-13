@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
-import { Star, ShoppingCart, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Star, ShoppingCart, Heart, ChevronLeft, ChevronRight, X, RotateCw, Maximize2, Minimize2, Camera, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import { productosAPI } from '@/lib/api';
 import { Producto, VarianteProducto } from '@/types';
@@ -24,6 +24,9 @@ export default function ProductoDetallePage() {
   const [tallaSeleccionada, setTallaSeleccionada] = useState<VarianteProducto | null>(null);
   const { agregar } = useCarritoStore();
   const { usuario } = useAuthStore();
+  const [mostrarAR, setMostrarAR] = useState(false);
+  const [arGiro, setArGiro] = useState(0);
+  const [arEscala, setArEscala] = useState(1);
 
   useEffect(() => {
     if (slug) {
@@ -367,6 +370,21 @@ export default function ProductoDetallePage() {
                 </button>
               </div>
 
+              {producto.categoria?.slug === 'hogar' && (
+                <div className="pt-2">
+                  <button
+                    onClick={() => {
+                      setArGiro(0);
+                      setArEscala(1);
+                      setMostrarAR(true);
+                    }}
+                    className="w-full py-3 px-5 rounded-xl border-2 border-teal bg-teal/5 text-teal hover:bg-teal hover:text-white font-semibold flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer shadow-sm"
+                  >
+                    ✨ Ver en tu espacio (RA)
+                  </button>
+                </div>
+              )}
+
               {/* Descripción */}
               {producto.descripcion && (
                 <div className="pt-3 border-t border-gray-100">
@@ -380,6 +398,131 @@ export default function ProductoDetallePage() {
           </div>
         </div>
       </div>
+      {/* Modal de Realidad Aumentada DreamIA */}
+      <AnimatePresence>
+        {mostrarAR && (
+          <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-white rounded-3xl overflow-hidden max-w-xl w-full shadow-premium relative border border-gray-100"
+            >
+              {/* Encabezado */}
+              <div className="bg-azul-oscuro text-white px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-left">
+                  <Sparkles size={18} className="text-dorado" />
+                  <div>
+                    <h3 className="font-bold text-sm font-montserrat">DreamIA — Realidad Aumentada</h3>
+                    <p className="text-[9px] text-white/60 mt-0.5">Ajusta el mueble en la habitación de muestra</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setMostrarAR(false)}
+                  className="p-1 rounded-full hover:bg-white/10 text-white transition-colors cursor-pointer"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              {/* Contenedor del simulador */}
+              <div className="relative aspect-[4/3] w-full bg-gray-900 overflow-hidden select-none">
+                {/* Imagen de fondo (habitación vacía) */}
+                <img
+                  src="https://images.unsplash.com/photo-1513694203232-719a280e022f?w=800"
+                  alt="Habitación vacía"
+                  className="w-full h-full object-cover pointer-events-none"
+                />
+
+                {/* Producto superpuesto */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div
+                    className="relative w-56 h-56 transition-transform duration-200"
+                    style={{
+                      transform: `rotate(${arGiro}deg) scale(${arEscala})`,
+                    }}
+                  >
+                    <img
+                      src={producto.imagenPrincipal}
+                      alt={producto.nombre}
+                      className="w-full h-full object-contain drop-shadow-[0_15px_25px_rgba(0,0,0,0.5)]"
+                    />
+                  </div>
+                </div>
+
+                {/* Controles flotantes inferiores */}
+                <div className="absolute bottom-4 inset-x-4 flex justify-between items-center bg-black bg-opacity-65 backdrop-blur-md rounded-2xl p-2.5 border border-white border-opacity-10">
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setArGiro((prev) => (prev - 45) % 360)}
+                      className="w-8 h-8 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                      title="Girar izquierda"
+                    >
+                      <RotateCw size={14} className="transform -scale-x-100" />
+                    </button>
+                    <button
+                      onClick={() => setArGiro((prev) => (prev + 45) % 360)}
+                      className="w-8 h-8 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 text-white flex items-center justify-center transition-colors cursor-pointer"
+                      title="Girar derecha"
+                    >
+                      <RotateCw size={14} />
+                    </button>
+                  </div>
+
+                  <div className="flex gap-1.5 items-center">
+                    <button
+                      onClick={() => setArEscala((prev) => Math.max(prev - 0.1, 0.5))}
+                      className="w-8 h-8 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 text-white flex items-center justify-center transition-colors cursor-pointer font-bold text-xs"
+                      title="Reducir"
+                    >
+                      -
+                    </button>
+                    <span className="text-white text-[11px] font-semibold min-w-[36px] text-center">
+                      {Math.round(arEscala * 100)}%
+                    </span>
+                    <button
+                      onClick={() => setArEscala((prev) => Math.min(prev + 0.1, 1.5))}
+                      className="w-8 h-8 rounded-lg bg-white bg-opacity-10 hover:bg-opacity-20 text-white flex items-center justify-center transition-colors cursor-pointer font-bold text-xs"
+                      title="Agrandar"
+                    >
+                      +
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => {
+                      toast.success("Foto guardada en tu galería local 📸");
+                    }}
+                    className="bg-teal hover:bg-teal-oscuro text-white text-[11px] font-bold px-3 py-2 rounded-lg flex items-center gap-1 cursor-pointer"
+                  >
+                    <Camera size={12} /> Capturar
+                  </button>
+                </div>
+              </div>
+
+              {/* Información y acción */}
+              <div className="p-4 flex items-center justify-between border-t border-gray-100">
+                <div className="max-w-[65%] text-left">
+                  <p className="font-bold text-azul-oscuro text-xs truncate">{producto.nombre}</p>
+                  <p className="text-[10px] text-gris-elegante mt-0.5">
+                    Visualizado fotorrealista en escala simulada.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    agregarAlCarrito();
+                    setMostrarAR(false);
+                  }}
+                  className="btn-primario inline-flex items-center gap-1 text-[11px] px-3.5 py-2 cursor-pointer"
+                >
+                  <ShoppingCart size={12} /> Comprar ahora
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <Footer />
     </>
   );
