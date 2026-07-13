@@ -7,21 +7,40 @@ import { MailService } from './mail.service';
   imports: [
     MailerModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: async (configService: ConfigService) => ({
-        transport: {
-          host: configService.get<string>('MAIL_HOST'),
-          port: configService.get<number>('MAIL_PORT'),
-          secure: configService.get<boolean>('MAIL_SECURE') || false,
-          auth: {
-            user: configService.get<string>('MAIL_USER'),
-            pass: configService.get<string>('MAIL_PASSWORD'),
-          },
-        },
-        defaults: {
-          from: `"LlevaloPe" <${configService.get<string>('MAIL_FROM')}>`,
-        },
-      }),
       inject: [ConfigService],
+      useFactory: (configService: ConfigService) => {
+        const port = Number(
+          configService.get<string>('MAIL_PORT', '2525'),
+        );
+
+        const secure =
+          configService.get<string>('MAIL_SECURE', 'false') === 'true';
+
+        const fromName = configService.get<string>(
+          'MAIL_FROM_NAME',
+          'LlevaloPe',
+        );
+
+        const fromAddress = configService.get<string>(
+          'MAIL_FROM_ADDRESS',
+          'noreply@llevalope.com',
+        );
+
+        return {
+          transport: {
+            host: configService.get<string>('MAIL_HOST'),
+            port,
+            secure,
+            auth: {
+              user: configService.get<string>('MAIL_USER'),
+              pass: configService.get<string>('MAIL_PASSWORD'),
+            },
+          },
+          defaults: {
+            from: `"${fromName}" <${fromAddress}>`,
+          },
+        };
+      },
     }),
   ],
   providers: [MailService],

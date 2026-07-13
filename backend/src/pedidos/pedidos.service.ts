@@ -1,7 +1,8 @@
 import { randomUUID } from 'crypto';
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 import { MailService } from '../mail/mail.service';
+import { ComprobantesService } from '../comprobantes/comprobantes.service';
 import {
   calcularCostoEnvio,
   calcularIgvIncluido,
@@ -20,8 +21,115 @@ const METODOS_PAGO_INSTANTANEOS = ['YAPE', 'PLIN', 'TARJETA', 'PAYPAL'];
 
 @Injectable()
 export class PedidosService {
-  constructor(private prisma: PrismaService, private mailService: MailService) {}
+  private readonly logger = new Logger(PedidosService.name);
 
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mailService: MailService,
+    private readonly comprobantesService: ComprobantesService,
+  ) {}
+
+  private async enviarCorreoPedido(
+  pedidoId: number,
+): Promise<void> {
+  try {
+    const pedido = await this.prisma.pedido.findUnique({
+      where: {
+        id: pedidoId,
+      },
+      include: {
+        usuario: {
+          select: {
+            nombre: true,
+            apellido: true,
+            correo: true,
+          },
+        },
+        items: true,
+      },
+    });
+
+    if (!pedido) {
+      this.logger.warn(
+        `No se pudo enviar el correo: pedido ${pedidoId} no encontrado`,
+      );
+      return;
+    }
+
+    const nombreCliente = [
+      pedido.usuario.nombre,
+      pedido.usuario.apellido,
+    ]
+      .filter(Boolean)
+      .join(' ');
+
+    const fechaHora = new Date(pedido.creadoEn);
+
+    const fecha = fechaHora.toLocaleDateString('es-PE');
+
+    const hora = fechaHora.toLocaleTimeString('es-PE', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+    let comprobantePdf: Buffer | undefined;
+
+    if (pedido.estadoPago === 'PAGADO') {
+      comprobantePdf =
+        await this.comprobantesService.generarComprobantePago({
+          numeroPedido: pedido.numeroPedido,
+          fecha,
+          nombreCliente,
+          correoCliente: pedido.usuario.correo,
+          metodoPago: pedido.metodoPago,
+          subtotal: Number(pedido.subtotal),
+          descuento: Number(pedido.descuento),
+          costoEnvio: Number(pedido.costoEnvio),
+          impuestos: Number(pedido.impuestos),
+          total: Number(pedido.total),
+          items: pedido.items.map((item) => ({
+            nombre: item.nombre,
+            cantidad: item.cantidad,
+            precioUnitario: Number(item.precioUnit),
+            subtotal: Number(item.subtotal),
+          })),
+        });
+    }
+
+    await this.mailService.sendOrderConfirmation({
+      correo: pedido.usuario.correo,
+      nombreCliente,
+      numeroPedido: pedido.numeroPedido,
+      fecha,
+      hora,
+      metodoPago: pedido.metodoPago,
+      estadoPago: pedido.estadoPago,
+      subtotal: Number(pedido.subtotal),
+      descuento: Number(pedido.descuento),
+      costoEnvio: Number(pedido.costoEnvio),
+      impuestos: Number(pedido.impuestos),
+      total: Number(pedido.total),
+      items: pedido.items.map((item) => ({
+        nombre: item.nombre,
+        cantidad: item.cantidad,
+        precioUnitario: Number(item.precioUnit),
+        subtotal: Number(item.subtotal),
+      })),
+      comprobantePdf,
+    });
+  } catch (error) {
+    const mensaje =
+      error instanceof Error
+        ? error.message
+        : 'Error desconocido';
+
+    this.logger.error(
+      `Error al generar o enviar el correo del pedido ` +
+        `${pedidoId}: ${mensaje}`,
+    );
+  }
+}
+  
   async previewCheckout(usuarioId: number, datos: any) {
     return this.construirCheckout(usuarioId, datos, Boolean(datos.reservarStock));
   }
@@ -179,17 +287,7 @@ export class PedidosService {
     });
 
     // Send order confirmation email
-    this.mailService.sendOrderConfirmation(
-      pedido.usuario.correo,
-      pedido.id,
-      new Date(pedido.creadoEn).toLocaleDateString('es-PE'),
-      Number(pedido.total),
-      pedido.items.map(i => ({
-        nombre: i.nombre,
-        cantidad: i.cantidad,
-        total: new Intl.NumberFormat('es-PE', { style: 'currency', currency: 'PEN' }).format(Number(i.subtotal)),
-      })),
-    );
+    await this.enviarCorreoPedido(pedido.id);
 
     return pedido;
   }
@@ -309,7 +407,11 @@ export class PedidosService {
 
     const pedido = await this.prisma.pedido.findFirst({ where });
     if (!pedido) throw new NotFoundException('Pedido no encontrado');
-
+    if (pedido.estadoPago === 'PAGADO') {
+      throw new BadRequestException(
+        'El pedido ya se encuentra pagado',
+      );
+    }
     const referencia = datos.numeroOperacion
       ? `Operación: ${datos.numeroOperacion}`
       : datos.voucher
@@ -319,16 +421,21 @@ export class PedidosService {
     const [pedidoActualizado] = await this.prisma.$transaction([
       this.prisma.pedido.update({
         where: { id },
-        data: { estadoPago: 'PAGADO' as any },
+        data: {
+          estadoPago: 'PAGADO' as any,
+        },
       }),
       this.prisma.historialPedido.create({
         data: {
           pedidoId: id,
           estado: pedido.estado,
-          descripcion: `Pago simulado confirmado manualmente - ${referencia}`,
+          descripcion:
+            `Pago simulado confirmado manualmente - ${referencia}`,
         },
       }),
     ]);
+
+    await this.enviarCorreoPedido(pedidoActualizado.id);
 
     return pedidoActualizado;
   }
@@ -360,7 +467,9 @@ export class PedidosService {
     if (usuarioId) {
       const pedido = await this.prisma.pedido.findFirst({ where: { id: pedidoId, usuarioId } });
       if (!pedido) throw new NotFoundException('Pedido no encontrado');
+    
     }
+    
 
     // return this.prisma.pagoPedido.findMany({ // Model not in DB
     //   where,

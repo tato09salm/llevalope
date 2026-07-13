@@ -15,6 +15,7 @@ import { InventarioModule } from './inventario/inventario.module';
 import { SoporteModule } from './soporte/soporte.module';
 import { ReportesModule } from './reportes/reportes.module';
 import { MailModule } from './mail/mail.module';
+import { ComprobantesModule } from './comprobantes/comprobantes.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { MailModule } from './mail/mail.module';
     SizesModule,
     PedidosModule,
     ProveedoresModule,
+    ComprobantesModule,
     InventarioModule,
     SoporteModule,
     ReportesModule,
