@@ -1,18 +1,25 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 
 @Injectable()
 export class SizesService {
+  private readonly logger = new Logger(SizesService.name);
+  
   constructor(private prisma: PrismaService) {}
 
   async listar(todos?: boolean) {
-    return await this.prisma.size.findMany({
-      where: todos ? undefined : { activo: true },
-      include: { coleccion: true },
-      orderBy: [
-        { orden: 'asc' },
-      ],
-    });
+    try {
+      return await this.prisma.size.findMany({
+        where: todos ? undefined : { activo: true },
+        include: { coleccion: true },
+        orderBy: [
+          { orden: 'asc' },
+        ],
+      });
+    } catch (e) {
+      this.logger.error('Error in SizesService.listar:', e);
+      throw e;
+    }
   }
 
   async obtenerPorId(id: number) {
@@ -50,11 +57,16 @@ export class SizesService {
   }
 
   async toggleActive(id: number) {
-    const talla = await this.obtenerPorId(id);
-    return this.prisma.size.update({
-      where: { id },
-      data: { activo: !talla.activo },
-    });
+    try {
+      const talla = await this.obtenerPorId(id);
+      return this.prisma.size.update({
+        where: { id },
+        data: { activo: !talla.activo },
+      });
+    } catch (e) {
+      this.logger.error('Error in SizesService.toggleActive:', e);
+      throw e;
+    }
   }
 
   async eliminar(id: number) {

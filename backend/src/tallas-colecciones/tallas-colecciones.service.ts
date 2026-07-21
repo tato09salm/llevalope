@@ -1,16 +1,28 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { PrismaService } from '../common/prisma/prisma.service';
 
 @Injectable()
 export class SizeCollectionsService {
+  private readonly logger = new Logger(SizeCollectionsService.name);
+  
   constructor(private prisma: PrismaService) {}
 
   async listar(todos?: boolean) {
-    return await this.prisma.sizeCollection.findMany({
-      where: todos ? undefined : { activo: true },
-      include: { tallas: { orderBy: { orden: 'asc' } } },
-      orderBy: { orden: 'asc' },
-    });
+    try {
+      return await this.prisma.sizeCollection.findMany({
+        where: todos ? undefined : { activo: true },
+        include: { 
+          tallas: { 
+            where: todos ? undefined : { activo: true }, 
+            orderBy: { orden: 'asc' } 
+          } 
+        },
+        orderBy: { orden: 'asc' },
+      });
+    } catch (e) {
+      this.logger.error('Error in SizeCollectionsService.listar:', e);
+      throw e;
+    }
   }
 
   async obtenerPorId(id: number) {
@@ -62,11 +74,16 @@ export class SizeCollectionsService {
   }
 
   async toggleActive(id: number) {
-    const coleccion = await this.obtenerPorId(id);
-    return this.prisma.sizeCollection.update({
-      where: { id },
-      data: { activo: !coleccion.activo },
-    });
+    try {
+      const coleccion = await this.obtenerPorId(id);
+      return this.prisma.sizeCollection.update({
+        where: { id },
+        data: { activo: !coleccion.activo },
+      });
+    } catch (e) {
+      this.logger.error('Error in SizeCollectionsService.toggleActive:', e);
+      throw e;
+    }
   }
 
   async eliminar(id: number) {

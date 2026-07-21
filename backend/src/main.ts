@@ -9,9 +9,9 @@ async function bootstrap() {
   
   const logger = new Logger('Bootstrap');
 
-  // Aumentar límite de tamaño de solicitudes
-  app.use(json({ limit: '10mb' }));
-  app.use(urlencoded({ extended: true, limit: '10mb' }));
+  // Aumentar límite de tamaño de solicitudes (20mb para soportar imágenes base64 DreamIA)
+  app.use(json({ limit: '20mb' }));
+  app.use(urlencoded({ extended: true, limit: '20mb' }));
 
   // Middleware de logging de solicitudes
   app.use((req, res, next) => {

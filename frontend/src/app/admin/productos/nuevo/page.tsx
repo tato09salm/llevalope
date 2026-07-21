@@ -86,9 +86,18 @@ export default function NuevoProductoPage() {
       ]);
       const allCats = Array.isArray(catsRes) ? catsRes : catsRes.datos || [];
       setCategorias(allCats);
-      setColores(Array.isArray(colsRes) ? colsRes : colsRes.datos || []);
-      setColeccionesTallas(Array.isArray(collsRes) ? collsRes : collsRes.datos || []);
-      setTallas(Array.isArray(sizesRes) ? sizesRes : sizesRes.datos || []);
+      const coloresList = Array.isArray(colsRes) ? colsRes : colsRes.datos || [];
+      setColores(coloresList.filter((c) => c.activo));
+      const coleccionesList = Array.isArray(collsRes) ? collsRes : collsRes.datos || [];
+      // Filter out inactive collections and inactive sizes inside collections
+      setColeccionesTallas(
+        coleccionesList.filter((c) => c.activo).map((c) => ({
+          ...c,
+          tallas: (c.tallas || []).filter((t) => t.activo)
+        }))
+      );
+      const tallasList = Array.isArray(sizesRes) ? sizesRes : sizesRes.datos || [];
+      setTallas(tallasList.filter((t) => t.activo));
     } catch (error) {
       toast.error('Error al cargar datos');
     } finally {

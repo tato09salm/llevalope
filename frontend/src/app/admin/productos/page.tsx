@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Plus, Search, Edit2, Trash2, Eye, Package, Loader2, AlertTriangle, ChevronLeft, Layers } from 'lucide-react';
-import { productosAPI } from '../../../lib/api';
+import { Plus, Search, Edit2, Trash2, Eye, Package, Loader2, AlertTriangle, ChevronLeft, Layers, Filter } from 'lucide-react';
+import { productosAPI, categoriasAPI } from '../../../lib/api';
 import { Producto } from '../../../types';
 import toast from 'react-hot-toast';
 import ConfirmDialog from '../../../components/ui/confirm-dialog';
@@ -16,18 +16,37 @@ export default function AdminProductosPage() {
   const [cargando, setCargando] = useState(true);
   const [busqueda, setBusqueda] = useState('');
   const [total, setTotal] = useState(0);
+  const [categorias, setCategorias] = useState<any[]>([]);
+  const [categoriaPadreId, setCategoriaPadreId] = useState<string>('');
+  const [subcategoriaId, setSubcategoriaId] = useState<string>('');
   const [confirmDialog, setConfirmDialog] = useState<{ 
     isOpen: boolean; 
     id: number; 
     nombre: string; 
   }>({ isOpen: false, id: 0, nombre: '' });
 
-  useEffect(() => { cargar(); }, [busqueda]);
+  useEffect(() => { cargarCategorias(); }, []);
+  useEffect(() => { cargar(); }, [busqueda, categoriaPadreId, subcategoriaId]);
+
+  const cargarCategorias = async () => {
+    try {
+      const resp: any = await categoriasAPI.listarPadresAdmin();
+      setCategorias(resp || []);
+    } catch (error) {
+      console.error('❌ Error cargando categorías:', error);
+    }
+  };
 
   const cargar = async () => {
     setCargando(true);
     try {
-      const resp: any = await productosAPI.listarAdmin({ busqueda, limite: 50 });
+      const params: any = { busqueda, limite: 50 };
+      if (subcategoriaId) {
+        params.categoriaId = Number(subcategoriaId);
+      } else if (categoriaPadreId) {
+        params.categoriaId = Number(categoriaPadreId);
+      }
+      const resp: any = await productosAPI.listarAdmin(params);
       console.log('✅ API Response:', resp);
       console.log('📦 Productos:', resp.datos);
       console.log('🔢 Total:', resp.total);
@@ -118,9 +137,9 @@ export default function AdminProductosPage() {
       </div>
 
       <div className="max-w-7xl mx-auto">
-        {/* Buscador */}
-        <div className="bg-white rounded-2xl shadow-card p-4 mb-6 flex gap-4">
-          <div className="relative flex-1">
+        {/* Buscador y filtros */}
+        <div className="bg-white rounded-2xl shadow-card p-4 mb-6 flex flex-wrap items-center gap-4">
+          <div className="relative flex-1 min-w-[200px]">
             <Search size={16} className="absolute left-3.5 top-3 text-gris-elegante" />
             <input
               type="text"
@@ -129,6 +148,48 @@ export default function AdminProductosPage() {
               placeholder="Buscar por nombre, SKU..."
               className="input-campo pl-10 py-2.5"
             />
+          </div>
+          <div className="flex items-center gap-3">
+            <Filter size={16} className="text-gris-elegante" />
+            <select
+              value={categoriaPadreId}
+              onChange={(e) => {
+                setCategoriaPadreId(e.target.value);
+                setSubcategoriaId('');
+              }}
+              className="input-campo py-2.5 px-3 text-sm"
+            >
+              <option value="">Todas las categorías</option>
+              {categorias.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.nombre}</option>
+              ))}
+            </select>
+            {categoriaPadreId && (
+              <select
+                value={subcategoriaId}
+                onChange={(e) => setSubcategoriaId(e.target.value)}
+                className="input-campo py-2.5 px-3 text-sm"
+              >
+                <option value="">Todas las subcategorías</option>
+                {categorias
+                  .find((c) => String(c.id) === categoriaPadreId)
+                  ?.subcategorias.map((sub: any) => (
+                    <option key={sub.id} value={sub.id}>{sub.nombre}</option>
+                  ))
+                }
+              </select>
+            )}
+            {(categoriaPadreId || subcategoriaId) && (
+              <button
+                onClick={() => {
+                  setCategoriaPadreId('');
+                  setSubcategoriaId('');
+                }}
+                className="text-sm text-gris-elegante hover:text-azul-oscuro transition-colors"
+              >
+                Limpiar
+              </button>
+            )}
           </div>
         </div>
 
